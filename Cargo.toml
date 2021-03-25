@@ -1,0 +1,19 @@
+[package]
+name = "cangrebot"
+version = "0.1.0"
+authors = ["Sergio Meneses <sergioalmeneses@gmail.com>", "Daniel Solarte <contact@danielsolarte.com>"]
+edition = "2018"
+description = "A Discord Bot made with Rust from RustLangEs Community"
+readme = "README.md"
+repository = "https://github.com/RustLangES/discord-bot"
+license = "MIT OR Apache-2.0"
+homepage = "https://rustlanges.rs/"
+keywords = ["rustlanges", "discord", "bot"]
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+
+
+[[bin]]
+name = "cangrebot"
