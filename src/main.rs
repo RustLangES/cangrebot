@@ -1,20 +1,18 @@
 //! # CangreBot
 
+mod bootstrap;
 mod bot;
 mod commands;
 mod handler;
 
 use std::sync::Arc;
 
-use dotenv::dotenv;
-
+use crate::bootstrap::config;
+use color_eyre::eyre::{Result, WrapErr};
 use serenity::{
-    client::{bridge::gateway::ShardManager},
+    client::bridge::gateway::ShardManager,
     prelude::{Mutex, TypeMapKey},
 };
-
-use tracing::error;
-use tracing_subscriber::{EnvFilter, FmtSubscriber};
 
 pub struct ShardManagerContainer;
 
@@ -23,21 +21,20 @@ impl TypeMapKey for ShardManagerContainer {
 }
 
 #[tokio::main]
-async fn main() {
-    // Cargar las variables de entorno desde el archivo `.env`.
-    // Mira el archivo `.env.example` para saber cómo configurarlo.
-    dotenv().expect("Failed to load `.env` file.");
-
+async fn main() -> Result<()> {
     // Subscribirse al administrador de registros de Rust (debug mode).
     // Para ver los mensajes usa `RUST_LOG=debug` en tu archivo `.env`.
-    let subscriber = FmtSubscriber::builder()
-        .with_env_filter(EnvFilter::from_default_env())
-        .finish();
+    bootstrap::install_tracing();
 
-    tracing::subscriber::set_global_default(subscriber).expect("Failed to start the logger");
+    //Instalar color-eyre para obtner reportes de erorr con formato de colores
+    bootstrap::install_color_eyre()?;
+
+    //Obtener configuración
+    let config = config::Config::from_env()?;
 
     // Generar el client de Serenity para Discord usando el token de `DISCORD_TOKEN`.
-    let mut client = bot::get_client().await;
+    let mut client =
+        bot::get_client(config.discord_token.as_str(), config.bot_prefix.as_str()).await?;
 
     {
         let mut data = client.data.write().await;
@@ -55,7 +52,7 @@ async fn main() {
     });
 
     // Iniciar el bot, si hay un error se mostrará en los registros.
-    if let Err(why) = client.start().await {
-        error!("Client error: {:?}", why);
-    }
+    client.start().await.context("Error starting client")?;
+
+    Ok(())
 }
