@@ -1,7 +1,9 @@
+use color_eyre::eyre::{Result, WrapErr};
+use tracing::instrument;
+use serenity::{framework::StandardFramework, http::Http, model::id::UserId, Client};
 use std::collections::HashSet;
 
-use serenity::{Client, framework::StandardFramework, http::Http, model::id::UserId};
-
+#[instrument(skip(token))]
 async fn get_bot_owners(token: &str) -> HashSet<UserId> {
     let http = Http::new_with_token(token);
 
@@ -16,20 +18,20 @@ async fn get_bot_owners(token: &str) -> HashSet<UserId> {
     }
 }
 
-async fn get_framework(token: &str) -> StandardFramework {
+#[instrument(skip(token))]
+async fn get_framework(token: &str, prefix: &str) -> StandardFramework {
     let owners = get_bot_owners(token).await;
 
     StandardFramework::new()
-        .configure(|c| c.owners(owners).prefix("!"))
+        .configure(|c| c.owners(owners).prefix(prefix))
         .group(&crate::commands::GENERAL_GROUP)
 }
 
-pub async fn get_client() -> Client {
-    let token = std::env::var("DISCORD_TOKEN").expect("Cannot get the `DISCORD_TOKEN` environment variable.");
-
-    Client::builder(&token)
-        .framework(get_framework(&token).await)
+#[instrument(skip(token))]
+pub async fn get_client(token: &str, prefix: &str) -> Result<Client> {
+    Client::builder(token)
+        .framework(get_framework(token, prefix).await)
         .event_handler(crate::handler::Handler)
         .await
-        .expect("Error creating the client.")
+        .context("Error creating the client.")
 }
