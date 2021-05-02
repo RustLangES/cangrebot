@@ -47,5 +47,6 @@ $env:DISCORD_TOKEN="token" & BOT_PREFIX="!"; target/release/cangrebot.exe
 
 ## Autores
 
+-   [@sergiomeneses](https://github.com/sergiomeneses) - Contribuidor Inicial
 -   [@shiftrtech](https://github.com/shiftrtech) - Contribuidor Inicial
 -   [@danielsolartech](https://github.com/danielsolartech) - Contribuidor Inicial
