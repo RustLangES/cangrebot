@@ -1,13 +1,14 @@
 //! # CangreBot
 
-mod bootstrap;
+mod startup;
 mod bot;
 mod commands;
-mod handler;
+mod handlers;
 
 use std::sync::Arc;
 
-use crate::bootstrap::config;
+use crate::startup::config;
+
 use color_eyre::eyre::{Result, WrapErr};
 use serenity::{
     client::bridge::gateway::ShardManager,
@@ -24,10 +25,10 @@ impl TypeMapKey for ShardManagerContainer {
 async fn main() -> Result<()> {
     // Subscribirse al administrador de registros de Rust (debug mode).
     // Para ver los mensajes usa `RUST_LOG=debug` en tu archivo `.env`.
-    bootstrap::install_tracing();
+    startup::install_tracing();
 
     //Instalar color-eyre para obtner reportes de erorr con formato de colores
-    bootstrap::install_color_eyre()?;
+    startup::install_color_eyre()?;
 
     //Obtener configuración
     let config = config::Config::from_env()?;

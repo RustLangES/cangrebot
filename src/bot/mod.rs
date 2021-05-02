@@ -1,7 +1,8 @@
+use crate::handlers::events::Handler;
 use color_eyre::eyre::{Result, WrapErr};
-use tracing::instrument;
 use serenity::{framework::StandardFramework, http::Http, model::id::UserId, Client};
 use std::collections::HashSet;
+use tracing::instrument;
 
 #[instrument(skip(token))]
 async fn get_bot_owners(token: &str) -> HashSet<UserId> {
@@ -31,7 +32,7 @@ async fn get_framework(token: &str, prefix: &str) -> StandardFramework {
 pub async fn get_client(token: &str, prefix: &str) -> Result<Client> {
     Client::builder(token)
         .framework(get_framework(token, prefix).await)
-        .event_handler(crate::handler::Handler)
+        .event_handler(Handler)
         .await
         .context("Error creating the client.")
 }
