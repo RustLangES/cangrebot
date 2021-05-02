@@ -37,12 +37,12 @@ cargo build --release --bin cangrebot
 
 Linux o macOS:
 ```bash
-DISCORD_TOKEN=token target/release/cangrebot
+DISCORD_TOKEN=token,BOT_PREFIX=! target/release/cangrebot
 ```
 
 Windows PowerShell:
 ```powershell
-$env:DISCORD_TOKEN="token"; target/release/cangrebot.exe
+$env:DISCORD_TOKEN="token" & BOT_PREFIX="!"; target/release/cangrebot.exe
 ```
 
 ## Autores

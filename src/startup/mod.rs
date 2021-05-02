@@ -1,6 +1,9 @@
 pub mod config;
 
-use color_eyre::{eyre::{Result, WrapErr}, config::HookBuilder};
+use color_eyre::{
+    config::HookBuilder,
+    eyre::{Result, WrapErr},
+};
 use tracing::{info, instrument};
 use tracing_error::ErrorLayer;
 use tracing_subscriber::{fmt, layer::SubscriberExt, util::SubscriberInitExt, EnvFilter};
@@ -24,8 +27,9 @@ pub fn install_tracing() {
 pub fn install_color_eyre() -> Result<()> {
     info!("Installing color-eyre");
     HookBuilder::default()
-    .panic_section("consider reporting the bug on github")
-    .install().context("Error installing color-eyre")?;
+        .panic_section("consider reporting the bug on github")
+        .install()
+        .context("Error installing color-eyre")?;
 
     Ok(())
 }
