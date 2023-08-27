@@ -6,47 +6,55 @@ Bot de la comunidad de Discord de RustLang en Español.
 
 Para ejecutar el código en modo desarrollo tienes dos opciones:
 
-1. Recarga automática al guardar un archivo usando `cargo-watch`:
+1. Recarga automática al guardar un archivo usando `shuttle`:
 
-Para instalar `cargo-watch` usa:
+Para instalar `shuttle` deberiamos usar `cargo-binstall`.
+
+Esto instalara cargo-binstall en nuestro sistema.
+
+- Para Mac y Linux:
 ```bash
-cargo install cargo-watch
+curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
 ```
 
-> Mira [https://crates.io/crates/cargo-watch](https://crates.io/crates/cargo-watch) para más información.
+- Para Windows:
 
-Luego ejecuta el siguiente comando:
-```bash
-cargo watch -c -x 'run --bin cangrebot'
+```powershell
+Set-ExecutionPolicy Unrestricted -Scope Process; iex (iwr "https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.ps1").Content
 ```
 
-2. Ejecutar el código sin recargar al guardar:
+Una vez instalado instalamos shuttle:
 
+```
+cargo binstall cargo-shuttle
+```
+
+> Mira [Shuttle](https://docs.shuttle.rs/getting-started/installation) para más información.
+
+2. Modificar variables de entorno:
+
+Para que el bot se ejecute tenemos que crear el archivo `Secret.toml` con sus respectivas variables, un archivo de ejemplo esta en el repositorio, puedes renombrarlo.
+
+3. Ejecutar el bot:
+
+Luego ejecuta el siguiente comando para ejecutar de modo local el bot:
 ```bash
-cargo run --bin cangrebot
+cargo shuttle run
 ```
 
 ## Producción
 
-1. Compilamos el código en modo producción:
+Para ejecutar el bot en modo producción debemos ejecutar el siguiente comando:
+
 ```bash
-cargo build --release --bin cangrebot
+cargo shuttle deploy
 ```
 
-2. Ejecutamos el archivo binario resultante:
-
-Linux o macOS:
-```bash
-DISCORD_TOKEN=token,BOT_PREFIX=! target/release/cangrebot
-```
-
-Windows PowerShell:
-```powershell
-$env:DISCORD_TOKEN="token" & BOT_PREFIX="!"; target/release/cangrebot.exe
-```
+Esto deployara en Shuttle el bot.
 
 ## Autores
 
 -   [@sergiomeneses](https://github.com/sergiomeneses) - Contribuidor Inicial
 -   [@shiftrtech](https://github.com/shiftrtech) - Contribuidor Inicial
 -   [@danielsolartech](https://github.com/danielsolartech) - Contribuidor Inicial
+-   [@Phosphorus-M](https://github.com/Phosphorus-M) - Contribuidor

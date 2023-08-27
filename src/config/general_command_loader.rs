@@ -1,8 +1,8 @@
-pub mod ping;
-
-use ping::*;
 use serenity::framework::standard::macros::group;
+use crate::general_commands::ping::PING_COMMAND;
+
 
 #[group]
 #[commands(ping)]
-struct General;
+pub struct General;
+
