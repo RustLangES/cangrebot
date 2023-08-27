@@ -30,7 +30,13 @@ pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> 
         info!("Starting bot with token: {}", token);
     
         // Set gateway intents, which decides what events the bot will be notified about
-        let intents = GatewayIntents::GUILD_MESSAGES | GatewayIntents::MESSAGE_CONTENT;
+        let intents = GatewayIntents::GUILD_MEMBERS
+        | GatewayIntents::GUILD_BANS
+        | GatewayIntents::GUILD_MESSAGES
+        | GatewayIntents::MESSAGE_CONTENT
+        | GatewayIntents::GUILD_MESSAGE_REACTIONS
+        | GatewayIntents::DIRECT_MESSAGES
+        | GatewayIntents::DIRECT_MESSAGE_REACTIONS;
     
         info!("{:?}", secret_store.get("GUILD_ID"));
 

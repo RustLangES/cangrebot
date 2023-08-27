@@ -1,6 +1,7 @@
 use shuttle_secrets::SecretStore;
 
 pub mod config;
+pub mod events;
 pub mod general_commands;
 pub mod slash_commands;
 use config::setup::setup;
