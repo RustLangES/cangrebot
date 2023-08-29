@@ -1,13 +1,21 @@
+use std::collections::HashMap;
+use std::sync::Arc;
+
 use anyhow::anyhow;
 use shuttle_secrets::SecretStore;
+use songbird::driver::Bitrate;
+use songbird::{SerenityInit, input};
+use songbird::input::cached::{Memory, Compressed};
 use tracing::info;
 use serenity::prelude::*;
 use serenity::framework::{StandardFramework, standard::macros::hook};
 use serenity::model::channel::Message;
 use tracing::instrument;
 
+use crate::config::songbird_config::{CachedSound, SoundStore};
+
 use super::general_command_loader::GENERAL_GROUP;
-use super::general_command_loader::General;
+
 use super::slash_command_loader::Handler;
 
 pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> {
@@ -15,7 +23,7 @@ pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> 
         let token = if let Some(token) = secret_store.get("DISCORD_TOKEN") {
             token
         } else {
-            return Err(anyhow!("'DISCORD_TOKEN' was not found").into());
+            return Err(anyhow!("'DISCORD_TOKEN' was not found"));
         };
 
     
@@ -31,28 +39,65 @@ pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> 
         info!("Starting bot with token: {}", token);
     
         // Set gateway intents, which decides what events the bot will be notified about
-        let intents = GatewayIntents::GUILD_MEMBERS
-        | GatewayIntents::GUILD_BANS
-        | GatewayIntents::GUILD_MESSAGES
-        | GatewayIntents::MESSAGE_CONTENT
-        | GatewayIntents::GUILD_MESSAGE_REACTIONS
-        | GatewayIntents::DIRECT_MESSAGES
-        | GatewayIntents::DIRECT_MESSAGE_REACTIONS;
+        let intents = 
+        GatewayIntents::all();
     
         info!("{:?}", secret_store.get("GUILD_ID"));
 
         let Some(guild_id) = secret_store.get("GUILD_ID") else {
-            return Err(anyhow!("'GUILD_ID' was not found").into());
+            return Err(anyhow!("'GUILD_ID' was not found"));
         };
         let handler = Handler(guild_id.parse().unwrap());
 
         let client = Client::builder(token, intents)
             .event_handler(handler)
-            .event_handler(General)
             .framework(framework)
+            .register_songbird()
             .await
             .expect("Error creating client");
+    // Obtain a lock to the data owned by the client, and insert the client's
+    // voice manager into it. This allows the voice manager to be accessible by
+    // event handlers and framework commands.
+    {
+        let mut data = client.data.write().await;
 
+        // Loading the audio ahead of time.
+        let mut audio_map = HashMap::new();
+
+        // Creation of an in-memory source.
+        //
+        // This is a small sound effect, so storing the whole thing is relatively cheap.
+        //
+        // `spawn_loader` creates a new thread which works to copy all the audio into memory 
+        // ahead of time. We do this in both cases to ensure optimal performance for the audio
+        // core.
+        let ting_src = Memory::new(
+            input::ffmpeg("ting.wav").await.expect("File should be in root folder."),
+        ).expect("These parameters are well-defined.");
+        let _ = ting_src.raw.spawn_loader();
+        audio_map.insert("ting".into(), CachedSound::Uncompressed(ting_src));
+
+        // Another short sting, to show where each loop occurs.
+        let loop_src = Memory::new(
+            input::ffmpeg("loop.wav").await.expect("File should be in root folder."),
+        ).expect("These parameters are well-defined.");
+        let _ = loop_src.raw.spawn_loader();
+        audio_map.insert("loop".into(), CachedSound::Uncompressed(loop_src));
+
+        // Creation of a compressed source.
+        //
+        // This is a full song, making this a much less memory-heavy choice.
+        //
+        // Music by Cloudkicker, used under CC BY-SC-SA 3.0 (https://creativecommons.org/licenses/by-nc-sa/3.0/).
+        let song_src = Compressed::new(
+                input::ffmpeg("Cloudkicker_-_Loops_-_22_2011_07.mp3").await.expect("Link may be dead."),
+                Bitrate::BitsPerSecond(128_000),
+            ).expect("These parameters are well-defined.");
+        let _ = song_src.raw.spawn_loader();
+        audio_map.insert("song".into(), CachedSound::Compressed(song_src));
+
+        data.insert::<SoundStore>(Arc::new(Mutex::new(audio_map)));
+    }
 
         Ok(client)
 }

@@ -4,7 +4,7 @@ use std::convert::TryFrom;
 
 
 pub async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) {
-    if let Err(e) = _guild_member_addition(&ctx, &guild_id, &member).await {
+    if let Err(e) = _guild_member_addition(ctx, guild_id, member).await {
         tracing::error!("Failed to handle welcome guild_member_addition: {}", e);
     }
 }
@@ -13,14 +13,14 @@ pub async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &M
 async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) -> Result<()> {
     let join_msg = "Bienvenid@ <mention> a <server>! Pásala lindo!".to_string();
 
-    let msg_channel = ChannelId(778674893851983932 as u64);
+    let msg_channel = ChannelId(778674893851983932_u64);
 
     let join_msg_replaced = join_msg
         .replace("<mention>", &member.user.mention().to_string())
         .replace("<username>", &member.user.name)
         .replace(
             "<server>",
-            &guild_id.name(&ctx).unwrap_or_else(|| "".into()),
+            &guild_id.name(ctx).unwrap_or_else(|| "".into()),
         );
 
     let msg = msg_channel.say(&ctx, join_msg_replaced).await?;

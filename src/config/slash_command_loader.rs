@@ -1,6 +1,6 @@
-use serenity::{prelude::{EventHandler, Context}, async_trait, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, command::Command}};
+use serenity::{prelude::{EventHandler, Context}, async_trait, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, command::Command, Member}};
 use tracing::log::info;
-use crate::slash_commands;
+use crate::{slash_commands, events::join::guild_member_addition};
 
 
 pub struct Handler(pub u64);
@@ -8,6 +8,11 @@ pub struct Handler(pub u64);
 
 #[async_trait]
 impl EventHandler for Handler {
+
+    async fn guild_member_addition(&self, ctx: Context, member: Member) {
+        guild_member_addition(&ctx, &member.guild_id, &member).await; 
+    }
+
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
