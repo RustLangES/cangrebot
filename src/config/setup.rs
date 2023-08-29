@@ -7,6 +7,7 @@ use serenity::model::channel::Message;
 use tracing::instrument;
 
 use super::general_command_loader::GENERAL_GROUP;
+use super::general_command_loader::General;
 use super::slash_command_loader::Handler;
 
 pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> {
@@ -47,6 +48,7 @@ pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> 
 
         let client = Client::builder(token, intents)
             .event_handler(handler)
+            .event_handler(General)
             .framework(framework)
             .await
             .expect("Error creating client");

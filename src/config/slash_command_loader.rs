@@ -15,6 +15,7 @@ impl EventHandler for Handler {
 
             let content = match command.data.name.as_str() {
                 "ping" => slash_commands::ping::run(&command.data.options),
+                "invite" => slash_commands::invite::run(&command.data.options),
                 "id" => slash_commands::id::run(&command.data.options),
                 "attachmentinput" => slash_commands::attachmentinput::run(&command.data.options),
                 _ => "not implemented :(".to_string(),
@@ -42,6 +43,7 @@ impl EventHandler for Handler {
             commands
                 .create_application_command(|command| slash_commands::ping::register(command))
                 .create_application_command(|command| slash_commands::id::register(command))
+                .create_application_command(|command| slash_commands::invite::register(command))
                 .create_application_command(|command| slash_commands::welcome::register(command))
                 .create_application_command(|command| slash_commands::numberinput::register(command))
                 .create_application_command(|command| slash_commands::attachmentinput::register(command))
