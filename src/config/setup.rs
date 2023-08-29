@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -18,7 +19,7 @@ use super::general_command_loader::GENERAL_GROUP;
 
 use super::slash_command_loader::Handler;
 
-pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> {
+pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result<Client, anyhow::Error> {
         // Get the discord token set in `Secrets.toml`
         let token = if let Some(token) = secret_store.get("DISCORD_TOKEN") {
             token
@@ -72,14 +73,14 @@ pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> 
         // ahead of time. We do this in both cases to ensure optimal performance for the audio
         // core.
         let ting_src = Memory::new(
-            input::ffmpeg("ting.wav").await.expect("File should be in root folder."),
+            input::ffmpeg(public_folder.clone().join("ting.wav")).await.expect(&format!("File should be in root folder. {}", public_folder.clone().join("ting.wav").as_path().to_str().unwrap_or_default())),
         ).expect("These parameters are well-defined.");
         let _ = ting_src.raw.spawn_loader();
         audio_map.insert("ting".into(), CachedSound::Uncompressed(ting_src));
 
         // Another short sting, to show where each loop occurs.
         let loop_src = Memory::new(
-            input::ffmpeg("loop.wav").await.expect("File should be in root folder."),
+            input::ffmpeg(public_folder.clone().join("loop.wav")).await.expect("File should be in root folder."),
         ).expect("These parameters are well-defined.");
         let _ = loop_src.raw.spawn_loader();
         audio_map.insert("loop".into(), CachedSound::Uncompressed(loop_src));
@@ -90,7 +91,7 @@ pub async fn setup( secret_store: SecretStore) -> Result<Client, anyhow::Error> 
         //
         // Music by Cloudkicker, used under CC BY-SC-SA 3.0 (https://creativecommons.org/licenses/by-nc-sa/3.0/).
         let song_src = Compressed::new(
-                input::ffmpeg("Cloudkicker_-_Loops_-_22_2011_07.mp3").await.expect("Link may be dead."),
+                input::ffmpeg(public_folder.clone().join("Cloudkicker_-_Loops_-_22_2011_07.mp3")).await.expect("Link may be dead."),
                 Bitrate::BitsPerSecond(128_000),
             ).expect("These parameters are well-defined.");
         let _ = song_src.raw.spawn_loader();
