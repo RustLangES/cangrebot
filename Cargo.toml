@@ -18,3 +18,4 @@ color-eyre = "0.6.2"
 serde = "1.0.188"
 serde_json = "1.0.105"
 songbird = { version = "0.3.2", features = ["serenity"] }
+shuttle-static-folder = "0.24.0"
