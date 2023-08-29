@@ -2,6 +2,9 @@
 name = "cangrebot"
 version = "0.1.0"
 edition = "2021"
+authors = ["Sergio Meneses <sergioalmeneses@gmail.com>", "Daniel Solarte <contact@danielsolarte.com>"]
+description = "A Discord Bot made with Rust from RustLangEs Community"
+readme = "README.md"
 
 [dependencies]
 anyhow = "1.0.66"
