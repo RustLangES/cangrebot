@@ -2,15 +2,26 @@
 name = "cangrebot"
 version = "0.1.0"
 edition = "2021"
-authors = ["Sergio Meneses <sergioalmeneses@gmail.com>", "Daniel Solarte <contact@danielsolarte.com>"]
 description = "A Discord Bot made with Rust from RustLangEs Community"
 readme = "README.md"
+repository = "https://github.com/RustLangES/cangrebot"
+license = "MIT OR Apache-2.0"
+keywords = ["rustlanges", "discord", "bot"]
 
 [dependencies]
 anyhow = "1.0.66"
 shuttle-serenity = "0.24.0"
 shuttle-runtime = "0.24.0"
-serenity = { version = "0.11.5", default-features = true, features = ["cache", "framework", "client", "gateway", "rustls_backend", "model", "standard_framework", "voice"] }
+serenity = { version = "0.11.5", default-features = true, features = [
+    "cache",
+    "framework",
+    "client",
+    "gateway",
+    "rustls_backend",
+    "model",
+    "standard_framework",
+    "voice",
+] }
 shuttle-secrets = "0.24.0"
 tokio = "1.26.0"
 tracing = "0.1.37"
