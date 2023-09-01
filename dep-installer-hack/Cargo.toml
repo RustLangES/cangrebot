@@ -1,0 +1,16 @@
+# dep-installer-hack/Cargo.toml
+
+[package]
+name = "dep-installer-hack"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# For some reason, the exclude from the main workspace doesn't
+# work well with shuttle's `cargo-metadata`.
+# Therefore this crate is marked as workspace.
+[workspace]
+
+[dependencies]
+shuttle-runtime = "0.24.0"
+tokio = "1"

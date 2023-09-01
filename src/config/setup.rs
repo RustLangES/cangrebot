@@ -7,7 +7,6 @@ use shuttle_secrets::SecretStore;
 use songbird::driver::Bitrate;
 use songbird::{SerenityInit, input};
 use songbird::input::cached::{Memory, Compressed};
-use tracing::info;
 use serenity::prelude::*;
 use serenity::framework::{StandardFramework, standard::macros::hook};
 use serenity::model::channel::Message;
