@@ -10,7 +10,7 @@ use songbird::input::cached::{Memory, Compressed};
 use serenity::prelude::*;
 use serenity::framework::{StandardFramework, standard::macros::hook};
 use serenity::model::channel::Message;
-use tracing::instrument;
+use tracing::{instrument, info};
 
 use crate::config::songbird_config::{CachedSound, SoundStore};
 
@@ -26,7 +26,6 @@ pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result
             return Err(anyhow!("'DISCORD_TOKEN' was not found"));
         };
 
-    
         let prefix = secret_store.get("DISCORD_PREFIX").unwrap_or("!".to_string());
 
         let framework = StandardFramework::new()
