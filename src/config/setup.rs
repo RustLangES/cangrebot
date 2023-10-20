@@ -71,7 +71,7 @@ pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result
         // ahead of time. We do this in both cases to ensure optimal performance for the audio
         // core.
         let ting_src = Memory::new(
-            input::ffmpeg(public_folder.clone().join("ting.wav")).await.expect(&format!("File should be in root folder. {}", public_folder.clone().join("ting.wav").as_path().to_str().unwrap_or_default())),
+            input::ffmpeg(public_folder.clone().join("ting.wav")).await.unwrap_or_else(|_| panic!("File should be in root folder. {}", public_folder.clone().join("ting.wav").as_path().to_str().unwrap_or_default())),
         ).expect("These parameters are well-defined.");
         let _ = ting_src.raw.spawn_loader();
         audio_map.insert("ting".into(), CachedSound::Uncompressed(ting_src));
