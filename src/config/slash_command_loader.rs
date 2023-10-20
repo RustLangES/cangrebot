@@ -1,5 +1,5 @@
 use serenity::{prelude::{EventHandler, Context}, async_trait, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, command::Command, Member}};
-use tracing::log::info;
+use tracing::{log::info, error};
 use crate::{slash_commands, events::join::guild_member_addition};
 
 use slash_commands::ping::{register as ping_register, run as ping_run};
@@ -51,18 +51,17 @@ impl EventHandler for Handler {
 
         let guild_id = GuildId(self.0);
 
-        let _commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
+        if let Err(error) = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
                 .create_application_command(|command| explica_register(command))
                 .create_application_command(|command| ping_register(command))
                 .create_application_command(|command| id_register(command))
-                .create_application_command(|command| id_register(command))
                 .create_application_command(|command| invite_register(command))
                 .create_application_command(|command| welcome_register(command))
-                .create_application_command(|command| id_register(command))
                 .create_application_command(|command| attachmentinput_register(command))
-        })
-        .await;
+        }).await {
+            error!("Cannot create slash commands: {}", error);
+        };
 
         // info!("I now have the following guild slash commands: {:#?}", commands);
 
