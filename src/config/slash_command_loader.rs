@@ -2,6 +2,12 @@ use serenity::{prelude::{EventHandler, Context}, async_trait, model::prelude::{i
 use tracing::log::info;
 use crate::{slash_commands, events::join::guild_member_addition};
 
+use slash_commands::ping::{register as ping_register, run as ping_run};
+use slash_commands::invite::{register as invite_register, run as invite_run};
+use slash_commands::welcome::register as welcome_register;
+use slash_commands::id::{register as id_register, run as id_run};
+use slash_commands::attachmentinput::{register as attachmentinput_register, run as attachmentinput_run};
+use slash_commands::explica::{register as explica_register, run as explica_run};
 
 pub struct Handler(pub u64);
 
@@ -19,10 +25,11 @@ impl EventHandler for Handler {
             // info!("Received command interaction: {:#?}", command);
 
             let content = match command.data.name.as_str() {
-                "ping" => slash_commands::ping::run(&command.data.options),
-                "invite" => slash_commands::invite::run(&command.data.options),
-                "id" => slash_commands::id::run(&command.data.options),
-                "attachmentinput" => slash_commands::attachmentinput::run(&command.data.options),
+                "ping" => ping_run(&command.data.options),
+                "invite" => invite_run(&command.data.options),
+                "id" => id_run(&command.data.options),
+                "attachmentinput" => attachmentinput_run(&command.data.options),
+                "explica" => explica_run(&command.data.options),
                 _ => "not implemented :(".to_string(),
             };
 
@@ -46,12 +53,14 @@ impl EventHandler for Handler {
 
         let _commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
-                .create_application_command(|command| slash_commands::ping::register(command))
-                .create_application_command(|command| slash_commands::id::register(command))
-                .create_application_command(|command| slash_commands::invite::register(command))
-                .create_application_command(|command| slash_commands::welcome::register(command))
-                .create_application_command(|command| slash_commands::numberinput::register(command))
-                .create_application_command(|command| slash_commands::attachmentinput::register(command))
+                .create_application_command(|command| explica_register(command))
+                .create_application_command(|command| ping_register(command))
+                .create_application_command(|command| id_register(command))
+                .create_application_command(|command| id_register(command))
+                .create_application_command(|command| invite_register(command))
+                .create_application_command(|command| welcome_register(command))
+                .create_application_command(|command| id_register(command))
+                .create_application_command(|command| attachmentinput_register(command))
         })
         .await;
 
