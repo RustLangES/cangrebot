@@ -8,7 +8,7 @@ use scraper::{Html, Selector};
 
 #[command]
 pub async fn meetups(ctx: &Context, msg: &Message) -> CommandResult {
-    let meetups = vec!["Rust-MX".to_string(), "madrust".to_string(), "rust-argentina".to_string(), "bcnrust".to_string(), "rustlang-spain".to_string()];
+    let meetups = vec!["Rust-MX".to_string(), "madrust".to_string(), "rust-argentina".to_string(), "bcnrust".to_string(), "rustlang-spain".to_string(), "rust-medellin".to_string()];
     for meetup in meetups {
         let meetup_future = async move {
             if let Ok(meetup_fields) = get_meetup(meetup.clone()).await {
