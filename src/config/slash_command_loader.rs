@@ -1,24 +1,32 @@
-use serenity::{prelude::{EventHandler, Context}, async_trait, model::prelude::{interaction::{Interaction, InteractionResponseType}, Ready, GuildId, command::Command, Member}};
+use crate::slash_commands::sugerencia;
+use crate::{events::join::guild_member_addition, slash_commands};
+use serenity::{
+    async_trait,
+    model::prelude::{
+        command::Command,
+        interaction::{Interaction, InteractionResponseType},
+        GuildId, Member, Ready,
+    },
+    prelude::{Context, EventHandler},
+};
 use tracing::log::info;
-use crate::{slash_commands, events::join::guild_member_addition};
 
-use slash_commands::ping::{register as ping_register, run as ping_run};
-use slash_commands::invite::{register as invite_register, run as invite_run};
-use slash_commands::welcome::register as welcome_register;
-use slash_commands::id::{register as id_register, run as id_run};
-use slash_commands::attachmentinput::{register as attachmentinput_register, run as attachmentinput_run};
+use slash_commands::attachmentinput::{
+    register as attachmentinput_register, run as attachmentinput_run,
+};
 use slash_commands::explica::{register as explica_register, run as explica_run};
+use slash_commands::id::{register as id_register, run as id_run};
+use slash_commands::invite::{register as invite_register, run as invite_run};
+use slash_commands::ping::{register as ping_register, run as ping_run};
+use slash_commands::welcome::register as welcome_register;
 
 pub struct Handler(pub u64);
 
-
 #[async_trait]
 impl EventHandler for Handler {
-
     async fn guild_member_addition(&self, ctx: Context, member: Member) {
-        guild_member_addition(&ctx, &member.guild_id, &member).await; 
+        guild_member_addition(&ctx, &member.guild_id, &member).await;
     }
-
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
         if let Interaction::ApplicationCommand(command) = interaction {
@@ -30,6 +38,16 @@ impl EventHandler for Handler {
                 "id" => id_run(&command.data.options),
                 "attachmentinput" => attachmentinput_run(&command.data.options),
                 "explica" => explica_run(&command.data.options),
+                "sugerencia" => {
+                    sugerencia::run(
+                        &ctx,
+                        &command.channel_id,
+                        &command.data.options,
+                        &command.data.resolved.messages,
+                        &command.user,
+                    )
+                    .await
+                }
                 _ => "not implemented :(".to_string(),
             };
 
@@ -61,6 +79,7 @@ impl EventHandler for Handler {
                 .create_application_command(|command| welcome_register(command))
                 .create_application_command(|command| id_register(command))
                 .create_application_command(|command| attachmentinput_register(command))
+                .create_application_command(|command| sugerencia::register(command))
         })
         .await;
 
@@ -72,7 +91,5 @@ impl EventHandler for Handler {
         .await;
 
         // info!("I created the following global slash command: {:#?}", guild_command);
-        
     }
-
 }
