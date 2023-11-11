@@ -43,7 +43,6 @@ impl EventHandler for Handler {
                         &ctx,
                         &command.channel_id,
                         &command.data.options,
-                        &command.data.resolved.messages,
                         &command.user,
                     )
                     .await
