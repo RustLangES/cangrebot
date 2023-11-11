@@ -15,15 +15,4 @@ fn main() {
             .success() {
         panic!("failed to install dependencies")
     }
-
-    if std::env::var("HOSTNAME")
-        .unwrap_or_default()
-        .contains("shuttle") && !std::process::Command::new("git")
-            .arg("submodule update --init --recursive")
-            // can add more here
-            .status()
-            .expect("failed to run cargo")
-            .success() {
-        panic!("failed to install dependencies")
-    }
 }

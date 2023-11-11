@@ -1,4 +1,3 @@
-use crate::slash_commands::sugerencia;
 use crate::{events::join::guild_member_addition, slash_commands};
 use serenity::{
     async_trait,
@@ -9,7 +8,7 @@ use serenity::{
     },
     prelude::{Context, EventHandler},
 };
-use tracing::log::info;
+use tracing::{error, log::info};
 
 use slash_commands::attachmentinput::{
     register as attachmentinput_register, run as attachmentinput_run,
@@ -19,6 +18,7 @@ use slash_commands::id::{register as id_register, run as id_run};
 use slash_commands::invite::{register as invite_register, run as invite_run};
 use slash_commands::ping::{register as ping_register, run as ping_run};
 use slash_commands::welcome::register as welcome_register;
+use slash_commands::sugerencia;
 
 pub struct Handler(pub u64);
 
@@ -69,19 +69,20 @@ impl EventHandler for Handler {
 
         let guild_id = GuildId(self.0);
 
-        let _commands = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
+        if let Err(error) = GuildId::set_application_commands(&guild_id, &ctx.http, |commands| {
             commands
                 .create_application_command(|command| explica_register(command))
                 .create_application_command(|command| ping_register(command))
                 .create_application_command(|command| id_register(command))
-                .create_application_command(|command| id_register(command))
                 .create_application_command(|command| invite_register(command))
                 .create_application_command(|command| welcome_register(command))
-                .create_application_command(|command| id_register(command))
                 .create_application_command(|command| attachmentinput_register(command))
                 .create_application_command(|command| sugerencia::register(command))
         })
-        .await;
+        .await
+        {
+            error!("Cannot create slash commands: {}", error);
+        };
 
         // info!("I now have the following guild slash commands: {:#?}", commands);
 

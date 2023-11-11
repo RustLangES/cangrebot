@@ -44,6 +44,7 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
             option
                 .name("concepto_2")
                 .description("Este sera el concepto que se explicara")
+                .kind(CommandOptionType::String)
                 .required(false)
                 .add_string_choice("string", "string")
                 .add_string_choice("struct", "struct")

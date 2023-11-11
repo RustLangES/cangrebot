@@ -6,6 +6,7 @@ use serenity::model::prelude::command::CommandOptionType;
 use serenity::model::prelude::{ChannelId, Message, MessageId, ReactionType};
 use serenity::model::user::User;
 use serenity::prelude::{Context, Mentionable};
+use tracing::info;
 
 pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
     command
@@ -61,7 +62,8 @@ pub async fn run_create(
     message: &HashMap<MessageId, Message>,
     user: &User,
 ) -> String {
-    let msg_channel = ChannelId(824695624665923594_u64);
+    info!("Running create suggestion");
+    let msg_channel = ChannelId(1145293665141534810_u64);
 
     let msg = format!(
         "{} nos sugiere\n\n{}",

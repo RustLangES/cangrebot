@@ -11,6 +11,11 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
+      # fetch submodules recursively
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
       - uses: shuttle-hq/deploy-action@main
         with:
           deploy-key: ${{ secrets.SHUTTLE_DEPLOY_KEY }}
