@@ -1,0 +1,3 @@
+[submodule "static/rust-examples"]
+	path = static/rust-examples
+	url = https://github.com/CrawKatt/rust-examples

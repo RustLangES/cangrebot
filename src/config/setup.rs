@@ -7,11 +7,10 @@ use shuttle_secrets::SecretStore;
 use songbird::driver::Bitrate;
 use songbird::{SerenityInit, input};
 use songbird::input::cached::{Memory, Compressed};
-use tracing::info;
 use serenity::prelude::*;
 use serenity::framework::{StandardFramework, standard::macros::hook};
 use serenity::model::channel::Message;
-use tracing::instrument;
+use tracing::{instrument, info};
 
 use crate::config::songbird_config::{CachedSound, SoundStore};
 
@@ -20,14 +19,13 @@ use super::general_command_loader::GENERAL_GROUP;
 use super::slash_command_loader::Handler;
 
 pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result<Client, anyhow::Error> {
-        // Get the discord token set in `Secrets.toml`
+    // Get the discord token set in `Secrets.toml`
         let token = if let Some(token) = secret_store.get("DISCORD_TOKEN") {
             token
         } else {
             return Err(anyhow!("'DISCORD_TOKEN' was not found"));
         };
 
-    
         let prefix = secret_store.get("DISCORD_PREFIX").unwrap_or("!".to_string());
 
         let framework = StandardFramework::new()
@@ -73,7 +71,7 @@ pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result
         // ahead of time. We do this in both cases to ensure optimal performance for the audio
         // core.
         let ting_src = Memory::new(
-            input::ffmpeg(public_folder.clone().join("ting.wav")).await.expect("File should be in root folder."),
+            input::ffmpeg(public_folder.clone().join("ting.wav")).await.unwrap_or_else(|_| panic!("File should be in root folder. {}", public_folder.clone().join("ting.wav").as_path().to_str().unwrap_or_default())),
         ).expect("These parameters are well-defined.");
         let _ = ting_src.raw.spawn_loader();
         audio_map.insert("ting".into(), CachedSound::Uncompressed(ting_src));

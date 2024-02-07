@@ -16,6 +16,7 @@ async fn serenity(
     let Ok(_) = color_eyre::install() else {
         panic!("Failed to install color_eyre");
     };
+    let public_folder = PathBuf::from("static");
 
     let client = setup(secret_store,public_folder).await?;
 

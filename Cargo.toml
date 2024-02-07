@@ -2,31 +2,26 @@
 name = "cangrebot"
 version = "0.1.0"
 edition = "2021"
+authors = ["Sergio Meneses <sergioalmeneses@gmail.com>", "Daniel Solarte <contact@danielsolarte.com>"]
 description = "A Discord Bot made with Rust from RustLangEs Community"
 readme = "README.md"
-repository = "https://github.com/RustLangES/cangrebot"
-license = "MIT OR Apache-2.0"
-keywords = ["rustlanges", "discord", "bot"]
 
 [dependencies]
 anyhow = "1.0.66"
-shuttle-serenity = "0.25.0"
-shuttle-runtime = "0.25.0"
-serenity = { version = "0.11.5", default-features = true, features = [
-    "cache",
-    "framework",
-    "client",
-    "gateway",
-    "rustls_backend",
-    "model",
-    "standard_framework",
-    "voice",
-] }
-shuttle-secrets = "0.25.0"
+shuttle-serenity = "0.29.0"
+shuttle-runtime = "0.29.0"
+serenity = { version = "0.11.6", default-features = true, features = ["cache", "framework", "client", "gateway", "rustls_backend", "model", "standard_framework", "voice"] }
+shuttle-secrets = "0.29.0"
 tokio = "1.26.0"
 tracing = "0.1.37"
 color-eyre = "0.6.2"
 serde = "1.0.188"
 serde_json = "1.0.105"
 songbird = { version = "0.3.2", features = ["serenity"] }
-shuttle-static-folder = "0.25.0"
+shuttle-static-folder = "0.28.0"
+reqwest = { version = "0.11.22", features = ["json"] }
+scraper = { version = "0.17.1", features = ["indexmap", "deterministic", "atomic"] }
+
+[dependencies.parking_lot]
+version = "0.12"
+features = ["send_guard"]
