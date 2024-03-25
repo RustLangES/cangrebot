@@ -2,6 +2,7 @@ use anyhow::Result;
 use serenity::{model::prelude::*, prelude::*};
 use std::convert::TryFrom;
 use plantita_welcomes::create_welcome::combine_images;
+use serenity::all::{CreateAttachment, CreateMessage};
 
 pub async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) {
     if let Err(e) = _guild_member_addition(ctx, guild_id, member).await {
@@ -13,7 +14,7 @@ pub async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &M
 async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) -> Result<()> {
     let join_msg = "Bienvenid@ <mention> a <server>! Pásala lindo!".to_string();
 
-    let msg_channel = ChannelId(778674893851983932_u64);
+    let msg_channel = ChannelId::new(778674893851983932_u64);
 
     let join_msg_replaced = join_msg
         .replace("<mention>", &member.user.mention().to_string())
@@ -35,10 +36,9 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
     let output_path = format!("/tmp/{}_welcome.png", member.user.name);
     combine_images(&mut background, &img, 74, 74, 372)?;
     background.save(output_path.as_str())?;
+    let attachment = CreateAttachment::path(output_path.as_str()).await?;
 
-    let msg = msg_channel.send_files(&ctx, vec![output_path.as_str()], |m| {
-        m.content(&join_msg_replaced)
-    }).await?;
+    let msg = msg_channel.send_files(&ctx, vec![attachment], CreateMessage::new().content(&join_msg_replaced)).await?;
 
     // Remove the file after sending the message
     std::fs::remove_file(&output_path)?;

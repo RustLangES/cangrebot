@@ -1,17 +1,14 @@
 use std::path::PathBuf;
+use serenity::all::{
+    CommandDataOption, CommandOptionType,
+    CreateCommand, CreateCommandOption
+};
 
-use serenity::builder::CreateApplicationCommand;
-use serenity::model::prelude::application_command::CommandDataOption;
-use serenity::model::prelude::command::CommandOptionType;
-
-pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command
-        .name("explica")
+pub fn register() -> CreateCommand {
+    CreateCommand::new("explica")
         .description("Explica un concepto de Rust")
-        .create_option(|option| {
-            option
-                .name("concepto_1")
-                .description("Este sera el concepto que se explicara")
+        .add_option(
+            CreateCommandOption::new(CommandOptionType::String, "concepto_1", "Este sera el concepto que se explicara")
                 .kind(CommandOptionType::String)
                 .required(false)
                 .add_string_choice("arrays", "arrays")
@@ -39,12 +36,9 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
                 .add_string_choice("scopes", "scopes")
                 .add_string_choice("shadowing", "shadowing")
                 .add_string_choice("slices", "slices")
-        })
-        .create_option(|option| {
-            option
-                .name("concepto_2")
-                .description("Este sera el concepto que se explicara")
-                .kind(CommandOptionType::String)
+        )
+        .add_option(
+            CreateCommandOption::new(CommandOptionType::String, "concepto_2", "Este sera el concepto que se explicara")
                 .required(false)
                 .add_string_choice("string", "string")
                 .add_string_choice("struct", "struct")
@@ -54,17 +48,17 @@ pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicatio
                 .add_string_choice("variables", "variables")
                 .add_string_choice("vectores", "vectores")
                 .add_string_choice("while", "while")
-        })
+        )
 }
 
 pub fn run(options: &[CommandDataOption]) -> String {
     let mut concept = None;
     for option in options {
         if option.name == "concepto_1" {
-            concept = option.value.as_ref().unwrap().as_str();
+            concept = option.value.as_str();
         }
         if option.name == "concepto_2" {
-            concept = option.value.as_ref().unwrap().as_str();
+            concept = option.value.as_str();
         }
     }
     let concepts_folder = PathBuf::from("static/rust-examples/docs");

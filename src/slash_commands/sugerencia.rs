@@ -1,49 +1,37 @@
-use serenity::builder::CreateApplicationCommand;
+use serenity::all::{CommandDataOption, CommandDataOptionValue, CommandOptionType, CommandType, CreateCommand, CreateCommandOption, CreateThread, ResolvedValue};
+
 use serenity::json::Value;
-use serenity::model::prelude::application_command::CommandDataOption;
-use serenity::model::prelude::command::{CommandOptionType, CommandType};
 use serenity::model::prelude::{ChannelId, ReactionType};
 use serenity::model::user::User;
 use serenity::prelude::{Context, Mentionable};
 use tracing::info;
 
-pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command
-        .name("sugerencia")
+pub fn register() -> CreateCommand {
+    CreateCommand::new("sugerencia")
         .description("Crea, Modifica y administra las sugerencias :D")
         .kind(CommandType::ChatInput)
-        .create_option(|o| {
-            o.name("nueva")
-                .description("Crea una sugerencia")
+        .add_option(
+            CreateCommandOption::new(CommandOptionType::SubCommand, "nueva", "Crea una sugerencia")
                 .required(false)
-                .kind(CommandOptionType::SubCommand)
-                .create_sub_option(|o| {
-                    o.name("titulo")
+                .add_sub_option(
+                    CreateCommandOption::new(CommandOptionType::String, "titulo", "Agrega un Titulo a tu sugerencia")
                         .required(true)
                         .min_length(10)
-                        .description("Agrega un Titulo a tu sugerencia")
-                        .kind(CommandOptionType::String)
-                })
-                .create_sub_option(|o| {
-                    o.name("contenido")
+                )
+                .add_sub_option(
+                    CreateCommandOption::new(CommandOptionType::String, "contenido", "Cuentanos acerca de tu sugerencia")
                         .required(true)
                         .min_length(50)
-                        .description("Cuentanos acerca de tu sugerencia")
-                        .kind(CommandOptionType::String)
-                })
-        })
-        .create_option(|o| {
-            o.name("implementada")
-                .description("Marca una sugerencia como implementada")
-                .kind(CommandOptionType::SubCommand)
+                )
+        )
+        .add_option(
+            CreateCommandOption::new(CommandOptionType::SubCommand, "implementada", "Marca una sugerencia como implementada")
                 .required(false)
-        })
-        .create_option(|o| {
-            o.name("cancelada")
-                .description("Marca una sugerencia como cancelada o que no se realizara")
-                .kind(CommandOptionType::SubCommand)
+        )
+        .add_option(
+            CreateCommandOption::new(CommandOptionType::SubCommand, "cancelada", "Marca una sugerencia como cancelada o que no se realizara")
                 .required(false)
-        })
+        )
 }
 
 pub async fn run(
@@ -56,9 +44,9 @@ pub async fn run(
 
     for o in options {
         res = match o.name.as_str() {
-            "nueva" => Some(run_create(ctx, &o.options, user).await),
-            "implementada" => Some(run_implemented(ctx, channel_id, o.value.as_ref(), user).await),
-            "cancelada" => Some(run_canceled(ctx, channel_id, o.value.as_ref(), user).await),
+            "nueva" => Some(run_create(ctx, o.value.clone(), user).await),
+            "implementada" => Some(run_implemented(ctx, channel_id, o.value.clone(), user).await),
+            "cancelada" => Some(run_canceled(ctx, channel_id, o.value.clone(), user).await),
             _ => None,
         };
         if res.is_some() {
@@ -69,22 +57,26 @@ pub async fn run(
     res.unwrap_or("Subcomando invalido".to_string())
 }
 
-pub async fn run_create(ctx: &Context, options: &[CommandDataOption], user: &User) -> String {
+pub async fn run_create(ctx: &Context, options: CommandDataOptionValue, user: &User) -> String {
+    let CommandDataOptionValue::SubCommand(subcommand) = options else {
+        return "error".to_string();
+    };
+
     info!("Running create suggestion");
-    let msg_channel = ChannelId(824695624665923594_u64);
+    let msg_channel = ChannelId::new(824695624665923594_u64);
     let mut name = String::from("Comparte tu opinion!");
     let mut content = String::from("<Hubo un Error>");
 
-    for opt in options {
+    for opt in subcommand {
         match opt.name.as_str() {
             "titulo" => {
-                if let Some(value) = opt.value.as_ref() {
-                    name = value.as_str().map(|n| n.to_string()).unwrap();
+                if let CommandDataOptionValue::String(value) = opt.value {
+                    name = value;
                 }
             }
             "contenido" => {
-                if let Some(value) = opt.value.as_ref() {
-                    content = value.as_str().map(|n| n.to_string()).unwrap();
+                if let CommandDataOptionValue::String(value) = opt.value {
+                    content = value;
                 }
             }
             _ => {}
@@ -100,10 +92,9 @@ pub async fn run_create(ctx: &Context, options: &[CommandDataOption], user: &Use
     msg.react(&ctx, check_reaction).await.unwrap();
     msg.react(&ctx, reject_reaction).await.unwrap();
 
+    let builder = CreateThread::new(name.to_string()).auto_archive_duration(4320.into());
     msg_channel
-        .create_public_thread(ctx, msg.id, |t| {
-            t.name(name.to_string()).auto_archive_duration(4320)
-        })
+        .create_thread(ctx, builder)
         .await
         .unwrap();
 
@@ -113,7 +104,7 @@ pub async fn run_create(ctx: &Context, options: &[CommandDataOption], user: &Use
 pub async fn run_canceled(
     _ctx: &Context,
     _channel_id: &ChannelId,
-    _message: Option<&Value>,
+    _message: CommandDataOptionValue,
     _user: &User,
 ) -> String {
     // "Sugerencia Marcada como **Cancelada**".to_string()
@@ -123,7 +114,7 @@ pub async fn run_canceled(
 pub async fn run_implemented(
     _ctx: &Context,
     _channel_id: &ChannelId,
-    _message: Option<&Value>,
+    _message: CommandDataOptionValue,
     _user: &User,
 ) -> String {
     // "Sugerencia Marcada como **Implementada**".to_string()

@@ -85,20 +85,31 @@ pub async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
 
-    let (handler_lock, success_reader) = manager.join(guild_id, connect_to).await;
+    if let Ok(handler_lock) = manager.join(guild_id, connect_to).await {
+        let call_lock_for_evt = Arc::downgrade(&handler_lock);
 
-    let call_lock_for_evt = Arc::downgrade(&handler_lock);
-
-    if let Ok(_reader) = success_reader {
         let mut handler = handler_lock.lock().await;
-        check_msg(msg.channel_id.say(&ctx.http, &format!("Joined {}", connect_to.mention())).await);
 
-        let sources_lock = ctx.data.read().await.get::<SoundStore>().cloned().expect("Sound cache was installed at startup.");
+        check_msg(
+            msg.channel_id
+                .say(&ctx.http, &format!("Joined {}", connect_to.mention()))
+                .await,
+        );
+
+        let sources_lock = ctx
+            .data
+            .read()
+            .await
+            .get::<SoundStore>()
+            .cloned()
+            .expect("Sound cache was installed at startup.");
         let sources_lock_for_evt = sources_lock.clone();
         let sources = sources_lock.lock().await;
-        let source = sources.get("song").expect("Handle placed into cache at startup.");
+        let source = sources
+            .get("song")
+            .expect("Handle placed into cache at startup.");
 
-        let song = handler.play_source(source.into());
+        let song = handler.play(source.into());
         let _ = song.set_volume(1.0);
         let _ = song.enable_loop();
 
@@ -110,8 +121,13 @@ pub async fn join(ctx: &Context, msg: &Message) -> CommandResult {
                 sources: sources_lock_for_evt,
             },
         );
+
     } else {
-        check_msg(msg.channel_id.say(&ctx.http, "Error joining the channel").await);
+        check_msg(
+            msg.channel_id
+                .say(&ctx.http, "Error joining the channel")
+                .await,
+        );
     }
 
     Ok(())
@@ -132,7 +148,7 @@ impl VoiceEventHandler for LoopPlaySound {
             };
 
             let mut handler = call_lock.lock().await;
-            let sound = handler.play_source(src);
+            let sound = handler.play(src);
             let _ = sound.set_volume(0.5);
         }
 
@@ -212,7 +228,7 @@ pub async fn ting(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let sources = sources_lock.lock().await;
         let source = sources.get("ting").expect("Handle placed into cache at startup.");
 
-        let _sound = handler.play_source(source.into());
+        let _sound = handler.play(source.into());
 
         check_msg(msg.channel_id.say(&ctx.http, "Ting!").await);
     } else {

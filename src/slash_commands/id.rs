@@ -1,31 +1,23 @@
-use serenity::builder::CreateApplicationCommand;
-use serenity::model::prelude::command::CommandOptionType;
-use serenity::model::prelude::interaction::application_command::{
-    CommandDataOption,
-    CommandDataOptionValue,
+use serenity::all::{
+    CommandOptionType, CreateCommand,
+    CreateCommandOption, ResolvedOption,
+    ResolvedValue
 };
 
-pub fn run(options: &[CommandDataOption]) -> String {
-    let option = options
-        .get(0)
-        .expect("Expected user option")
-        .resolved
-        .as_ref()
-        .expect("Expected user object");
-
-    if let CommandDataOptionValue::User(user, _member) = option {
+pub fn run(options: &[ResolvedOption]) -> String {
+    if let Some(ResolvedOption {
+                    value: ResolvedValue::User(user, _), ..
+                }) = options.first()
+    {
         format!("{}'s id is {}", user.tag(), user.id)
     } else {
         "Please provide a valid user".to_string()
     }
 }
 
-pub fn register(command: &mut CreateApplicationCommand) -> &mut CreateApplicationCommand {
-    command.name("id").description("Get a user id").create_option(|option| {
-        option
-            .name("id")
-            .description("The user to lookup")
-            .kind(CommandOptionType::User)
-            .required(true)
-    })
+pub fn register() -> CreateCommand {
+    CreateCommand::new("id").description("Get a user id").add_option(
+        CreateCommandOption::new(CommandOptionType::User, "id", "The user to lookup")
+            .required(true),
+    )
 }
