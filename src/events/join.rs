@@ -13,7 +13,7 @@ pub async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &M
 async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) -> Result<()> {
     let join_msg = "Bienvenid@ <mention> a <server>! Pásala lindo!".to_string();
 
-    let msg_channel = ChannelId(1211486599322542150_u64);
+    let msg_channel = ChannelId(778674893851983932_u64);
 
     let join_msg_replaced = join_msg
         .replace("<mention>", &member.user.mention().to_string())
