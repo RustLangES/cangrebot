@@ -1,7 +1,7 @@
 use anyhow::Result;
 use serenity::{model::prelude::*, prelude::*};
 use std::convert::TryFrom;
-
+use plantita_welcomes::create_welcome::combine_images;
 
 pub async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) {
     if let Err(e) = _guild_member_addition(ctx, guild_id, member).await {
@@ -23,7 +23,25 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
             &guild_id.name(ctx).unwrap_or_else(|| "".into()),
         );
 
-    let msg = msg_channel.say(&ctx, join_msg_replaced).await?;
+    // Download the user's avatar and create a welcome image
+    let avatar_url = member.user.avatar_url().unwrap_or_else(|| member.user.default_avatar_url());
+    let response = reqwest::get(avatar_url).await?;
+    let bytes = response.bytes().await?;
+
+    let img = image::load_from_memory(&bytes)?;
+    img.resize(256, 256, image::imageops::Lanczos3);
+    let mut background = image::open("./static/background.png")?;
+
+    let output_path = format!("/tmp/{}_welcome.png", member.user.name);
+    combine_images(&mut background, &img, 74, 74, 372)?;
+    background.save(output_path.as_str())?;
+
+    let msg = msg_channel.send_files(&ctx, vec![output_path.as_str()], |m| {
+        m.content(&join_msg_replaced)
+    }).await?;
+
+    // Remove the file after sending the message
+    std::fs::remove_file(&output_path)?;
 
     // Convert string emoji to ReactionType to allow custom emojis
     let reaction = ReactionType::try_from("👋")?;
