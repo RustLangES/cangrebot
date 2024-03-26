@@ -1,6 +1,5 @@
-use serenity::all::{CommandDataOption, CommandDataOptionValue, CommandOptionType, CommandType, CreateCommand, CreateCommandOption, CreateThread, ResolvedValue};
+use serenity::all::{CommandDataOption, CommandDataOptionValue, CommandOptionType, CommandType, CreateCommand, CreateCommandOption, CreateThread};
 
-use serenity::json::Value;
 use serenity::model::prelude::{ChannelId, ReactionType};
 use serenity::model::user::User;
 use serenity::prelude::{Context, Mentionable};
