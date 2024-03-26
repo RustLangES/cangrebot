@@ -1,18 +1,9 @@
 use std::{collections::HashMap, sync::{Arc, Weak}};
 
 use serenity::{
-    async_trait,
-    client::Context,
-    framework::{
-        standard::{
-            Args, CommandResult,
-            macros::command,
-        },
-    },
-    model::channel::Message,
-    prelude::{Mentionable, Mutex},
-    Result as SerenityResult,
+    async_trait, client::Context, framework::standard::{Args, CommandResult}, model::channel::Message, prelude::{Mentionable, Mutex}, Result as SerenityResult
 };
+use serenity::all::standard::macros::command;
 
 use songbird::{
     Call,
@@ -26,14 +17,10 @@ use crate::config::songbird_config::{CachedSound,SoundStore};
 
 // This imports `typemap`'s `Key` as `TypeMapKey`.
 
-
-
-
 #[command]
 #[only_in(guilds)]
 pub async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
 
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
@@ -63,15 +50,19 @@ pub async fn deafen(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
-#[only_in(guilds)]
-pub async fn join(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+#[bucket = "A"]
+#[only_in("guilds")]
+#[description("join voice channel")]
+async fn join(ctx: &Context, msg: &Message) -> CommandResult {
+    let voice_states = match msg.guild(ctx.cache.as_ref()) {
+        Some(guild) => guild.voice_states.clone(),
+        None => { return Ok(()); }
+      };
 
-    let channel_id = guild
-        .voice_states.get(&msg.author.id)
-        .and_then(|voice_state| voice_state.channel_id);
-
+    let guild_id = msg.guild_id.unwrap();
+    let channel_id = voice_states
+    .get(&msg.author.id)
+    .and_then(|voice_state| voice_state.channel_id);
 
     let connect_to = match channel_id {
         Some(channel) => channel,
@@ -85,20 +76,31 @@ pub async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
 
-    let (handler_lock, success_reader) = manager.join(guild_id, connect_to).await;
+    if let Ok(handler_lock) = manager.join(guild_id, connect_to).await {
+        let call_lock_for_evt = Arc::downgrade(&handler_lock);
 
-    let call_lock_for_evt = Arc::downgrade(&handler_lock);
-
-    if let Ok(_reader) = success_reader {
         let mut handler = handler_lock.lock().await;
-        check_msg(msg.channel_id.say(&ctx.http, &format!("Joined {}", connect_to.mention())).await);
 
-        let sources_lock = ctx.data.read().await.get::<SoundStore>().cloned().expect("Sound cache was installed at startup.");
+        check_msg(
+            msg.channel_id
+                .say(&ctx.http, &format!("Joined {}", connect_to.mention()))
+                .await,
+        );
+
+        let sources_lock = ctx
+            .data
+            .read()
+            .await
+            .get::<SoundStore>()
+            .cloned()
+            .expect("Sound cache was installed at startup.");
         let sources_lock_for_evt = sources_lock.clone();
         let sources = sources_lock.lock().await;
-        let source = sources.get("song").expect("Handle placed into cache at startup.");
+        let source = sources
+            .get("song")
+            .expect("Handle placed into cache at startup.");
 
-        let song = handler.play_source(source.into());
+        let song = handler.play(source.into());
         let _ = song.set_volume(1.0);
         let _ = song.enable_loop();
 
@@ -110,8 +112,13 @@ pub async fn join(ctx: &Context, msg: &Message) -> CommandResult {
                 sources: sources_lock_for_evt,
             },
         );
+
     } else {
-        check_msg(msg.channel_id.say(&ctx.http, "Error joining the channel").await);
+        check_msg(
+            msg.channel_id
+                .say(&ctx.http, "Error joining the channel")
+                .await,
+        );
     }
 
     Ok(())
@@ -132,7 +139,7 @@ impl VoiceEventHandler for LoopPlaySound {
             };
 
             let mut handler = call_lock.lock().await;
-            let sound = handler.play_source(src);
+            let sound = handler.play(src);
             let _ = sound.set_volume(0.5);
         }
 
@@ -143,8 +150,7 @@ impl VoiceEventHandler for LoopPlaySound {
 #[command]
 #[only_in(guilds)]
 pub async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
 
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
@@ -166,8 +172,7 @@ pub async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 pub async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
 
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
@@ -199,8 +204,8 @@ pub async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 pub async fn ting(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
+
 
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
@@ -212,7 +217,7 @@ pub async fn ting(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         let sources = sources_lock.lock().await;
         let source = sources.get("ting").expect("Handle placed into cache at startup.");
 
-        let _sound = handler.play_source(source.into());
+        let _sound = handler.play(source.into());
 
         check_msg(msg.channel_id.say(&ctx.http, "Ting!").await);
     } else {
@@ -225,8 +230,7 @@ pub async fn ting(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 pub async fn undeafen(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
 
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
@@ -249,8 +253,8 @@ pub async fn undeafen(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 #[only_in(guilds)]
 pub async fn unmute(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).unwrap();
-    let guild_id = guild.id;
+    let guild_id = msg.guild_id.unwrap();
+
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
 

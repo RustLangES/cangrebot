@@ -5,6 +5,8 @@ use serenity::model::channel::Message;
 use serenity::prelude::Context;
 use reqwest::Client;
 use scraper::{Html, Selector};
+use serenity::all::{CreateEmbed, CreateEmbedFooter};
+use serenity::builder::CreateMessage;
 
 #[command]
 pub async fn meetups(ctx: &Context, msg: &Message) -> CommandResult {
@@ -34,18 +36,15 @@ pub async fn meetups(ctx: &Context, msg: &Message) -> CommandResult {
         let location = meetup.2.clone() + " - " + &detail.2.clone();
     
         msg.channel_id.say(&ctx.http, "Meetup:").await?;
-    
-        let _ = msg.channel_id.send_message(&ctx.http, |m| {
-            m.embed(|e| {
-                e.title(meetup.0.clone());
-                e.description(detail.0.clone());
-                e.image(detail.1.clone());
-                e.url(meetup.1.clone());
-                e.footer(|footer| footer.text(location));
-                e
-            });
-            m
-        }).await;
+
+        let embed = CreateEmbed::new()
+            .title(meetup.0.clone())
+            .description(detail.0.clone())
+            .image(detail.1.clone())
+            .url(meetup.1.clone())
+            .footer(CreateEmbedFooter::new(location));
+
+        let _ = msg.channel_id.send_message(&ctx.http, CreateMessage::new().embed(embed)).await;
     }
     
     Ok(())

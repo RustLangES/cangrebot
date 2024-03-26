@@ -1,13 +1,11 @@
 
 use std::{collections::HashMap, sync::Arc};
 
-use serenity::{prelude::TypeMapKey};
-use songbird::{
-    input::{
+use serenity::prelude::TypeMapKey;
+use songbird::input::{
         cached::{Compressed, Memory},
         Input,
-    },
-};
+    };
 use tokio::sync::Mutex;
 
 

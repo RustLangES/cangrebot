@@ -3,12 +3,14 @@ use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
-use shuttle_secrets::SecretStore;
+use shuttle_runtime::SecretStore;
 use songbird::driver::Bitrate;
-use songbird::{SerenityInit, input};
+use songbird::SerenityInit;
 use songbird::input::cached::{Memory, Compressed};
+use songbird::input::File;
 use serenity::prelude::*;
 use serenity::framework::{StandardFramework, standard::macros::hook};
+use serenity::framework::standard::Configuration;
 use serenity::model::channel::Message;
 use tracing::{instrument, info};
 
@@ -29,10 +31,11 @@ pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result
         let prefix = secret_store.get("DISCORD_PREFIX").unwrap_or("!".to_string());
 
         let framework = StandardFramework::new()
-        .configure(|c| c.prefix(prefix)) // set the bot's prefix to "!"
-        .before(before)
         .unrecognised_command(unknown_command)
-        .group(&GENERAL_GROUP);
+        .group(&GENERAL_GROUP)
+        .before(before);
+
+        framework.configure(Configuration::new().prefix(prefix));
 
 
         info!("Starting bot with token: {}", token);
@@ -70,16 +73,23 @@ pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result
         // `spawn_loader` creates a new thread which works to copy all the audio into memory 
         // ahead of time. We do this in both cases to ensure optimal performance for the audio
         // core.
+        let src = public_folder.clone().join("ting.wav");
+        let file = File::new(src);
         let ting_src = Memory::new(
-            input::ffmpeg(public_folder.clone().join("ting.wav")).await.unwrap_or_else(|_| panic!("File should be in root folder. {}", public_folder.clone().join("ting.wav").as_path().to_str().unwrap_or_default())),
-        ).expect("These parameters are well-defined.");
+            file.into())
+            .await
+            .unwrap_or_else(|_| panic!("File should be in root folder. {}", public_folder.clone().join("ting.wav").as_path().to_str().unwrap_or_default()));
         let _ = ting_src.raw.spawn_loader();
         audio_map.insert("ting".into(), CachedSound::Uncompressed(ting_src));
 
         // Another short sting, to show where each loop occurs.
+        let src = public_folder.clone().join("loop.wav");
+        let file = File::new(src);
         let loop_src = Memory::new(
-            input::ffmpeg(public_folder.clone().join("loop.wav")).await.expect("File should be in root folder."),
-        ).expect("These parameters are well-defined.");
+            file.into())
+            .await
+            .expect("File should be in root folder.");
+
         let _ = loop_src.raw.spawn_loader();
         audio_map.insert("loop".into(), CachedSound::Uncompressed(loop_src));
 
@@ -88,10 +98,11 @@ pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result
         // This is a full song, making this a much less memory-heavy choice.
         //
         // Music by Cloudkicker, used under CC BY-SC-SA 3.0 (https://creativecommons.org/licenses/by-nc-sa/3.0/).
+        let src = public_folder.clone().join("Cloudkicker_-_Loops_-_22_2011_07.mp3");
+        let file = File::new(src);
         let song_src = Compressed::new(
-                input::ffmpeg(public_folder.clone().join("Cloudkicker_-_Loops_-_22_2011_07.mp3")).await.expect("Link may be dead."),
-                Bitrate::BitsPerSecond(128_000),
-            ).expect("These parameters are well-defined.");
+            file.into(),
+            Bitrate::BitsPerSecond(128_000)).await.expect("Link may be dead.");
         let _ = song_src.raw.spawn_loader();
         audio_map.insert("song".into(), CachedSound::Compressed(song_src));
 
