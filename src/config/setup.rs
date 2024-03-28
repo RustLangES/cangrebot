@@ -6,7 +6,7 @@ use anyhow::anyhow;
 use shuttle_runtime::SecretStore;
 use songbird::driver::Bitrate;
 use songbird::SerenityInit;
-use songbird::input::cached::{Memory, Compressed};
+use songbird::input::cached::Compressed;
 use songbird::input::File;
 use serenity::prelude::*;
 use serenity::framework::{StandardFramework, standard::macros::hook};
@@ -66,50 +66,47 @@ pub async fn setup( secret_store: SecretStore, public_folder: PathBuf) -> Result
         // Loading the audio ahead of time.
         let mut audio_map = HashMap::new();
 
-        // Creation of an in-memory source.
-        //
-        // This is a small sound effect, so storing the whole thing is relatively cheap.
-        //
-        // `spawn_loader` creates a new thread which works to copy all the audio into memory 
-        // ahead of time. We do this in both cases to ensure optimal performance for the audio
-        // core.
-        let src = public_folder.clone().join("ting.wav");
-        let file = File::new(src);
-        let ting_src = Memory::new(
-            file.into())
-            .await
-            .unwrap_or_else(|_| panic!("File should be in root folder. {}", public_folder.clone().join("ting.wav").as_path().to_str().unwrap_or_default()));
-        let _ = ting_src.raw.spawn_loader();
-        audio_map.insert("ting".into(), CachedSound::Uncompressed(ting_src));
+        load_sound_file(&mut audio_map, &public_folder, "loop", "loop.mp3").await;
+        load_sound_file(&mut audio_map, &public_folder, "ting", "ting.mp3").await;
+        load_sound_file(&mut audio_map, &public_folder, "song", "Cloudkicker_-_Loops_-_22_2011_07.mp3").await;
 
-        // Another short sting, to show where each loop occurs.
-        let src = public_folder.clone().join("loop.wav");
-        let file = File::new(src);
-        let loop_src = Memory::new(
-            file.into())
-            .await
-            .expect("File should be in root folder.");
-
-        let _ = loop_src.raw.spawn_loader();
-        audio_map.insert("loop".into(), CachedSound::Uncompressed(loop_src));
-
-        // Creation of a compressed source.
-        //
-        // This is a full song, making this a much less memory-heavy choice.
-        //
-        // Music by Cloudkicker, used under CC BY-SC-SA 3.0 (https://creativecommons.org/licenses/by-nc-sa/3.0/).
-        let src = public_folder.clone().join("Cloudkicker_-_Loops_-_22_2011_07.mp3");
-        let file = File::new(src);
-        let song_src = Compressed::new(
-            file.into(),
-            Bitrate::BitsPerSecond(128_000)).await.expect("Link may be dead.");
-        let _ = song_src.raw.spawn_loader();
-        audio_map.insert("song".into(), CachedSound::Compressed(song_src));
 
         data.insert::<SoundStore>(Arc::new(Mutex::new(audio_map)));
     }
 
-        Ok(client)
+    Ok(client)
+}
+
+
+async fn load_sound_file(audio_map: &mut HashMap<String, CachedSound>, public_folder: &PathBuf, sound: &str, song_file: &str) {
+            // Creation of a compressed source.
+        //
+        // This is a full song, making this a much less memory-heavy choice.
+        //
+        // Music by Cloudkicker, used under CC BY-SC-SA 3.0 (https://creativecommons.org/licenses/by-nc-sa/3.0/).
+        let src = public_folder.clone().join(song_file);
+        let file = File::new(src);
+        let song_src = Compressed::new(
+            file.into(),
+            Bitrate::Auto,
+        )
+        .await
+        .expect("These parameters are well-defined.");
+        let _ = song_src.raw.spawn_loader();
+
+        // Compressed sources are internally stored as DCA1 format files.
+        // Because `Compressed` implements `std::io::Read`, we can save these
+        // to disk and use them again later if we want!
+        let mut creator = song_src.new_handle();
+
+        let song_file_compressed = song_file.replace("mp3", "dca");
+
+        std::thread::spawn(move || {
+            let mut out_file = std::fs::File::create(&song_file_compressed).unwrap();
+            std::io::copy(&mut creator, &mut out_file).expect("Error writing out song!");
+        });
+
+        audio_map.insert(sound.into(), CachedSound::Compressed(song_src));
 }
 
 

@@ -6,11 +6,7 @@ use serenity::{
 use serenity::all::standard::macros::command;
 
 use songbird::{
-    Call,
-    Event,
-    EventContext,
-    EventHandler as VoiceEventHandler,
-    TrackEvent,
+    Call, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent
 };
 
 use crate::config::songbird_config::{CachedSound,SoundStore};
@@ -133,7 +129,7 @@ pub struct LoopPlaySound {
 impl VoiceEventHandler for LoopPlaySound {
     async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
         if let Some(call_lock) = self.call_lock.upgrade() {
-            let src = {
+            let src: songbird::tracks::Track = {
                 let sources = self.sources.lock().await;
                 sources.get("loop").expect("Handle placed into cache at startup.").into()
             };
@@ -141,6 +137,11 @@ impl VoiceEventHandler for LoopPlaySound {
             let mut handler = call_lock.lock().await;
             let sound = handler.play(src);
             let _ = sound.set_volume(0.5);
+            if let Err(error) = sound.disable_loop() {
+                tracing::error!("Hubo un problema: {}", error);
+            };
+        }else {
+            println!("no se pudo");
         }
 
         None
@@ -206,7 +207,6 @@ pub async fn mute(ctx: &Context, msg: &Message) -> CommandResult {
 pub async fn ting(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = msg.guild_id.unwrap();
 
-
     let manager = songbird::get(ctx).await
         .expect("Songbird Voice client placed in at initialisation.").clone();
 
@@ -215,10 +215,18 @@ pub async fn ting(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
         let sources_lock = ctx.data.read().await.get::<SoundStore>().cloned().expect("Sound cache was installed at startup.");
         let sources = sources_lock.lock().await;
-        let source = sources.get("ting").expect("Handle placed into cache at startup.");
 
-        let _sound = handler.play(source.into());
+        let Some(source) = sources.get("ting") else {
+            check_msg(msg.channel_id.say(&ctx.http, "Hubo un problema cargando el sonido!").await);
+            return Ok(())
+        };
 
+        handler.stop();
+
+        let sound = handler.play_only(source.into());
+
+        let _ = sound.set_volume(1.0);
+        
         check_msg(msg.channel_id.say(&ctx.http, "Ting!").await);
     } else {
         check_msg(msg.channel_id.say(&ctx.http, "Not in a voice channel to play in").await);

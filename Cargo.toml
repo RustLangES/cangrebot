@@ -10,7 +10,7 @@ readme = "README.md"
 anyhow = "1.0.66"
 shuttle-serenity = "0.42.0"
 shuttle-runtime = "0.42.0"
-serenity = { version = "0.12.1", default-features = true, features = ["cache", "framework", "client", "gateway", "rustls_backend", "model", "standard_framework", "voice"] }
+serenity = { version = "=0.12.0", default-features = true, features = ["cache", "framework", "client", "gateway", "rustls_backend", "model", "standard_framework", "voice"] }
 #shuttle-secrets = "0.42.0"
 tokio = "1.26.0"
 tracing = "0.1.37"
@@ -23,6 +23,7 @@ reqwest = { version = "0.12.2", features = ["json"] }
 scraper = { version = "0.19.0", features = ["indexmap", "deterministic", "atomic"] }
 plantita_welcomes = { git = "https://github.com/CrawKatt/plantita_welcomes.git" }
 image = "0.24.7"
+symphonia = { version = "0.5.3", default-features = false, features = ["mp3", "ogg", "wav"] }
 
 [dependencies.parking_lot]
 version = "0.12"
