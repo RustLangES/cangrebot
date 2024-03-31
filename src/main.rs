@@ -16,7 +16,7 @@ async fn serenity(
     };
     let public_folder = PathBuf::from("static");
 
-    let client = setup(secret_store,public_folder).await?;
+    let client = setup(secret_store, public_folder).await?;
 
     Ok(client.into())
 }
