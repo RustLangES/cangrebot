@@ -23,5 +23,4 @@ jobs:
           no-test: "true"
           secrets: |
             DISCORD_TOKEN = '${{ secrets.DISCORD_TOKEN }}'
-            HOST = '${{ secrets.HOST}}'
             GUILD_ID = '${{ secrets.GUILD_ID }}'

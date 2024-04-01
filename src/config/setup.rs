@@ -53,11 +53,7 @@ pub async fn setup(
         return Err(anyhow!("'GUILD_ID' was not found"));
     };
 
-    let Some(host) = secret_store.get("HOST") else {
-        return Err(anyhow!("'HOST' was not found"));
-    };
-
-    let handler = Handler::new(guild_id.parse().unwrap(), host);
+    let handler = Handler::new(guild_id.parse().unwrap());
 
     let client = Client::builder(token, intents)
         .event_handler(handler)

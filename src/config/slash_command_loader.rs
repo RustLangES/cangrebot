@@ -10,7 +10,6 @@ use serenity::{
     model::prelude::{GuildId, Interaction, Member, Ready},
     prelude::{Context, EventHandler},
 };
-use tiny_http::Method;
 use tracing::{error, log::info};
 
 use crate::slash_commands::ping;
@@ -23,17 +22,11 @@ use slash_commands::sugerencia;
 
 pub struct Handler {
     guild_id: u64,
-    host: String,
-    http_running: AtomicBool,
 }
 
 impl Handler {
-    pub fn new(guild_id: u64, host: String) -> Self {
-        Self {
-            host,
-            guild_id,
-            http_running: AtomicBool::new(false),
-        }
+    pub fn new(guild_id: u64) -> Self {
+        Self { guild_id }
     }
 }
 
@@ -103,53 +96,6 @@ impl EventHandler for Handler {
             slash_commands::wonderful_command::register(),
         )
         .await;
-
-        let ctx = Arc::new(ctx);
-
-        if !self.http_running.load(Ordering::Relaxed) {
-            let ctx1 = Arc::clone(&ctx);
-            let host = self.host.clone();
-
-            // start http server
-            tokio::spawn(async move {
-                let server = tiny_http::Server::http(host).unwrap();
-
-                tracing::debug!("Listening on {:?}", server.server_addr());
-
-                while let Ok(mut req) = server.recv() {
-                    println!("Request: {req:?}");
-                    // Ejecuta el servidor
-                    match (req.method(), req.url()) {
-                        (Method::Post, "/daily_challenge") => {
-                            let reader = req.as_reader();
-                            let Ok(data) = serde_json::from_reader(reader) else {
-                                tracing::error!("Failed load json from reader");
-                                continue;
-                            };
-                            match run_daily_challenge(&ctx1, &data).await {
-                                Ok(()) => {
-                                    tracing::debug!("Success send daily");
-                                    let r = req.respond(tiny_http::Response::empty(200));
-                                    tracing::debug!("Response sended: {r:?}");
-                                }
-                                Err(e) => {
-                                    tracing::error!("Cannot send daily: {e:?}");
-                                    let r = req.respond(
-                                        tiny_http::Response::from_string(e.to_string())
-                                            .with_status_code(400),
-                                    );
-                                    tracing::debug!("Response sended: {r:?}");
-                                }
-                            }
-                        }
-                        _ => {}
-                    }
-                }
-            });
-
-            // Now that the loop is running, we set the bool to true
-            self.http_running.swap(true, Ordering::Relaxed);
-        }
 
         // info!("I created the following global slash command: {:#?}", guild_command);
     }

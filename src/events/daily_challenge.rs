@@ -1,9 +1,15 @@
+use std::sync::Arc;
+
+use axum::extract::State;
+use axum::http::StatusCode;
+use axum::response::IntoResponse;
+use axum::Json;
 use serde::{Deserialize, Serialize};
 use serenity::all::{ForumTagId, MessageFlags};
 use serenity::builder::{CreateAllowedMentions, CreateForumPost, CreateForumTag, CreateMessage};
+use serenity::http::Http;
 use serenity::model::prelude::ChannelId;
 use serenity::prelude::Context;
-use serenity::Result;
 use tracing::info;
 
 const PARTICIPANT_ROLE: u64 = 1224238464958992495;
@@ -16,26 +22,30 @@ pub struct DailyChallengeRequest {
 }
 
 pub async fn run_daily_challenge(
-    ctx: &Context,
-    DailyChallengeRequest {
+    State(ctx): State<Arc<Http>>,
+    Json(DailyChallengeRequest {
         title,
         message,
         tag_name,
-    }: &DailyChallengeRequest,
-) -> Result<()> {
+    }): Json<DailyChallengeRequest>,
+) -> impl IntoResponse {
     info!("Running create suggestion");
-    let msg_channel = ChannelId::new(824695624665923594_u64.into());
+    let msg_channel = ChannelId::new(1219703076944871616_u64.into());
 
-    let forum = msg_channel
-        .to_channel(ctx)
-        .await?
-        .guild()
-        .ok_or(serenity::Error::Other("GuildId not found"))?;
-    let Some(tag) = forum.available_tags.iter().find(|t| &t.name == tag_name) else {
-        return Err(serenity::Error::Other("Tag not found"));
+    let Ok(forum) = msg_channel.to_channel(&ctx).await else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Cannot convert to channel",
+        );
+    };
+    let Some(forum) = forum.guild() else {
+        return (StatusCode::NOT_FOUND, "GuildId not found");
+    };
+    let Some(tag) = forum.available_tags.iter().find(|t| t.name == tag_name) else {
+        return (StatusCode::NOT_FOUND, "Tag not found");
     };
 
-    let _ = msg_channel
+    match msg_channel
         .create_forum_post(
             &ctx,
             CreateForumPost::new(
@@ -46,7 +56,12 @@ pub async fn run_daily_challenge(
             )
             .add_applied_tag(tag.id),
         )
-        .await?;
-
-    Ok(())
+        .await
+    {
+        Ok(_) => (StatusCode::OK, "Ok"),
+        Err(_) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Cannot Create Forum Post",
+        ),
+    }
 }
