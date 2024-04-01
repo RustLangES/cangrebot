@@ -1,4 +1,4 @@
-use std::net::SocketAddr;
+use std::net::{IpAddr, SocketAddr};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
@@ -23,12 +23,14 @@ use slash_commands::sugerencia;
 
 pub struct Handler {
     guild_id: u64,
+    host: String,
     http_running: AtomicBool,
 }
 
 impl Handler {
-    pub fn new(guild_id: u64) -> Self {
+    pub fn new(guild_id: u64, host: String) -> Self {
         Self {
+            host,
             guild_id,
             http_running: AtomicBool::new(false),
         }
@@ -106,10 +108,11 @@ impl EventHandler for Handler {
 
         if !self.http_running.load(Ordering::Relaxed) {
             let ctx1 = Arc::clone(&ctx);
+            let host = self.host.clone();
 
             // start http server
             tokio::spawn(async move {
-                let server = tiny_http::Server::http("0.0.0.0:1337").unwrap();
+                let server = tiny_http::Server::http(host).unwrap();
 
                 tracing::debug!("Listening on {:?}", server.server_addr());
 
@@ -131,7 +134,10 @@ impl EventHandler for Handler {
                                 }
                                 Err(e) => {
                                     tracing::error!("Cannot send daily: {e:?}");
-                                    let r = req.respond(tiny_http::Response::from_string(e.to_string()).with_status_code(400));
+                                    let r = req.respond(
+                                        tiny_http::Response::from_string(e.to_string())
+                                            .with_status_code(400),
+                                    );
                                     tracing::debug!("Response sended: {r:?}");
                                 }
                             }
