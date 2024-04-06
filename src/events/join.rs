@@ -4,19 +4,15 @@ use serenity::all::{CreateAttachment, CreateMessage};
 use serenity::{model::prelude::*, prelude::*};
 use std::convert::TryFrom;
 
-const WELCOME_MESSAGE: &str = r#"¡Bienvenidx a nuestro servidor de Discord!
+const WELCOME_MESSAGE: &str = r#"¡Bienvenidx a la Comunidad de RustLangES!
 
-Nos alegra que hayas decidido unirte a nuestra comunidad. Aquí encontrarás varios canales dedicados a diferentes aspectos de nuestra comunidad Rust:
+Nos alegra que hayas decidido unirte a nuestra comunidad. Aquí encontrarás varios canales dedicados a diferentes aspectos de nuestra comunidad:
 
-- https://discord.com/channels/778674594856960012/1159719259287597087: Este es el lugar donde compartimos las últimas novedades y eventos de nuestra comunidad. ¡Mantente al tanto de lo que está sucediendo!
-
-- https://discord.com/channels/778674594856960012/1144727580323369000: ¿Has creado algo increíble con Rust? ¡Este es el canal perfecto para compartirlo con el resto de la comunidad!
-
-- https://discord.com/channels/778674594856960012/1140802416170770463: Aquí se discuten los proyectos que estamos desarrollando como comunidad, como nuestra página web, blog y bot. ¡Participa y ayúdanos a mejorar!
-
-- https://discord.com/channels/778674594856960012/1219703076944871616: ¿Quieres poner a prueba tus habilidades de programación? ¡Únete a los retos diarios y comparte tus soluciones!
-
-- https://discord.com/channels/778674594856960012/795836875872141362: Si estas empezando en Rust, este es el lugar perfecto para encontrar ayuda y recursos para empezar.
+- [#anuncios-de-la-comunidad](<https://discord.com/channels/778674594856960012/1159719259287597087>): Este es el lugar donde compartimos las últimas novedades y eventos de nuestra comunidad. ¡Mantente al tanto de lo que está sucediendo!
+- [#show-case](<https://discord.com/channels/778674594856960012/1144727580323369000>): ¿Has creado algo increíble con Rust? ¡Este es el canal perfecto para compartirlo con el resto de la comunidad!
+- [#proyectos-comunitarios](<https://discord.com/channels/778674594856960012/1140802416170770463>): Aquí se discuten los proyectos que estamos desarrollando como comunidad, como nuestra página web, blog y bot. ¡Participa y ayúdanos a mejorar!
+- [#retos-diarios](<https://discord.com/channels/778674594856960012/1219703076944871616>): ¿Quieres poner a prueba tus habilidades de programación? ¡Únete a los retos diarios y comparte tus soluciones!
+- [#principiantes](<https://discord.com/channels/778674594856960012/795836875872141362>): Si estas empezando en Rust, este es el lugar perfecto para encontrar ayuda y recursos para empezar.
 
 Recuerda revisar los mensajes fijados en cada canal para obtener más información.
 
