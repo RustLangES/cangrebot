@@ -353,7 +353,7 @@ dependencies = [
  "anyhow",
  "axum 0.7.5",
  "color-eyre",
- "image",
+ "image 0.24.9",
  "parking_lot",
  "plantita_welcomes",
  "reqwest 0.12.2",
@@ -1021,6 +1021,13 @@ dependencies = [
 ]
 
 [[package]]
+name = "gen_welcome"
+version = "0.1.0"
+dependencies = [
+ "image 0.25.1",
+]
+
+[[package]]
 name = "generator"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1425,6 +1432,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "image"
+version = "0.25.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "fd54d660e773627692c524beaad361aca785a4f9f5730ce91f42aabe5bce3d11"
+dependencies = [
+ "bytemuck",
+ "byteorder",
+ "num-traits",
+ "png",
+]
+
+[[package]]
 name = "imageproc"
 version = "0.23.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1432,7 +1451,7 @@ checksum = "b6aee993351d466301a29655d628bfc6f5a35a0d062b6160ca0808f425805fd7"
 dependencies = [
  "approx",
  "conv",
- "image",
+ "image 0.24.9",
  "itertools",
  "nalgebra",
  "num",
@@ -2152,7 +2171,7 @@ name = "plantita_welcomes"
 version = "0.1.1"
 source = "git+https://github.com/CrawKatt/plantita_welcomes.git#7047ef7129ab81dc422b166b9662c3ac4fe6091e"
 dependencies = [
- "image",
+ "image 0.24.9",
  "imageproc",
  "reqwest 0.11.27",
  "rusttype",

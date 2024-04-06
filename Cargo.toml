@@ -1,3 +1,5 @@
+workspace = { members = ["crates/gen_welcome"] }
+
 [package]
 name = "cangrebot"
 version = "0.1.0"
