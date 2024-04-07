@@ -8,7 +8,7 @@ pub fn generate(
     bg: &str,
     avatar: &[u8],
     member_name: &str,
-    members: u64,
+    members: Option<usize>,
     bold_font: &[u8],
     regular_font: &[u8],
     out: &str,
@@ -25,7 +25,6 @@ pub fn generate(
 
     overlay(&mut background, &avatar, 412, 87);
     let w_msg = format!("{member_name} acaba de caer en el servidor");
-    let n_msg = format!("Eres el Rustaceo #{members}");
 
     // Welcome message
     let (t1_x, _t1_y) = imageproc::drawing::text_size(FONT_SIZE, &bold, &w_msg);
@@ -39,17 +38,20 @@ pub fn generate(
         &w_msg,
     );
 
-    // Member number
-    let (t2_x, _t2_y) = imageproc::drawing::text_size(FONT_SIZE, &regular, &n_msg);
-    imageproc::drawing::draw_text_mut(
-        &mut background,
-        Rgba([255, 255, 255, 255]),
-        ((w / 2) - (t2_x / 2)) as i32,
-        488,
-        FONT_SIZE,
-        &regular,
-        &n_msg,
-    );
+    if let Some(members) = members.as_ref() {
+        let n_msg = format!("Eres el Rustaceo #{members}");
+        // Member number
+        let (t2_x, _t2_y) = imageproc::drawing::text_size(FONT_SIZE, &regular, &n_msg);
+        imageproc::drawing::draw_text_mut(
+            &mut background,
+            Rgba([255, 255, 255, 255]),
+            ((w / 2) - (t2_x / 2)) as i32,
+            488,
+            FONT_SIZE,
+            &regular,
+            &n_msg,
+        );
+    }
 
     background.save(out)
 }
