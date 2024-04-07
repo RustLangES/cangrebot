@@ -1,5 +1,11 @@
+use ab_glyph::{FontRef, PxScale};
 use image::imageops::overlay;
 use image::{GenericImage, GenericImageView, ImageBuffer, ImageError, Pixel, Rgba};
+
+const FONT_SIZE: PxScale = PxScale {
+    x: 36.,
+    y: 36.
+};
 
 pub fn generate(
     bg: &str,
@@ -8,12 +14,46 @@ pub fn generate(
     members: u64,
     out: &str,
 ) -> Result<(), ImageError> {
+    // Fonts
+    let bold = FontRef::try_from_slice(include_bytes!("../../../static/fonts/WorkSans-Bold.ttf"))
+        .unwrap();
+    let regular =
+        FontRef::try_from_slice(include_bytes!("../../../static/fonts/WorkSans-Regular.ttf"))
+            .unwrap();
+
     let avatar = image::load_from_memory(&avatar)?;
     let avatar = avatar.resize(256, 256, image::imageops::Lanczos3);
     let avatar = round(&avatar);
     let mut background = image::open(bg)?;
+    let (w, _h) = background.dimensions();
 
     overlay(&mut background, &avatar, 412, 87);
+    let w_msg = format!("{member_name} acaba de caer en el servidor");
+    let n_msg = format!("Eres el Rustaceo #{members}");
+
+    // Welcome message
+    let (t1_x, _t1_y) = imageproc::drawing::text_size(FONT_SIZE, &bold, &w_msg);
+    imageproc::drawing::draw_text_mut(
+        &mut background,
+        Rgba([255, 255, 255, 255]),
+        ((w / 2) - (t1_x / 2)) as i32,
+        429,
+        FONT_SIZE,
+        &bold,
+        &w_msg,
+    );
+
+    // Member number
+    let (t2_x, _t2_y) = imageproc::drawing::text_size(FONT_SIZE, &regular, &n_msg);
+    imageproc::drawing::draw_text_mut(
+        &mut background,
+        Rgba([255, 255, 255, 255]),
+        ((w / 2) - (t2_x / 2)) as i32,
+        488,
+        FONT_SIZE,
+        &regular,
+        &n_msg,
+    );
 
     background.save(out)
 }
