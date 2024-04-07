@@ -2,24 +2,20 @@ use ab_glyph::{FontRef, PxScale};
 use image::imageops::overlay;
 use image::{GenericImage, GenericImageView, ImageBuffer, ImageError, Pixel, Rgba};
 
-const FONT_SIZE: PxScale = PxScale {
-    x: 36.,
-    y: 36.
-};
+const FONT_SIZE: PxScale = PxScale { x: 36., y: 36. };
 
 pub fn generate(
     bg: &str,
     avatar: &[u8],
     member_name: &str,
     members: u64,
+    bold_font: &[u8],
+    regular_font: &[u8],
     out: &str,
 ) -> Result<(), ImageError> {
     // Fonts
-    let bold = FontRef::try_from_slice(include_bytes!("../../../static/fonts/WorkSans-Bold.ttf"))
-        .unwrap();
-    let regular =
-        FontRef::try_from_slice(include_bytes!("../../../static/fonts/WorkSans-Regular.ttf"))
-            .unwrap();
+    let bold = FontRef::try_from_slice(bold_font).expect("Cannot load bold font");
+    let regular = FontRef::try_from_slice(regular_font).expect("Cannot load regular font");
 
     let avatar = image::load_from_memory(&avatar)?;
     let avatar = avatar.resize(256, 256, image::imageops::Lanczos3);

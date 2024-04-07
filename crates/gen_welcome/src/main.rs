@@ -33,5 +33,14 @@ fn main() {
         buffer
     };
 
-    generate(&background, &avatar, &name, members, &out).unwrap();
+    generate(
+        &background,
+        &avatar,
+        &name,
+        members,
+        include_bytes!("../../../static/fonts/WorkSans-Bold.ttf"),
+        include_bytes!("../../../static/fonts/WorkSans-Regular.ttf"),
+        &out,
+    )
+    .unwrap();
 }
