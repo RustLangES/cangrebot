@@ -58,7 +58,7 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
     gen_welcome::generate(
         "./static/welcome_background.png",
         &avatar,
-        &member.user.global_name.unwrap_or(member.user.name),
+        &member.user.global_name.clone().unwrap_or(member.user.name.clone()),
         0,
         include_bytes!("./static/fonts/WorkSans-Bold.ttf"),
         include_bytes!("./static/fonts/WorkSans-Regular.ttf"),
