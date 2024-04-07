@@ -66,7 +66,6 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
     )
     .expect("Cannot generate welcome image");
 
-    background.save(output_path.as_str())?;
     let attachment = CreateAttachment::path(output_path.as_str()).await?;
 
     let msg = msg_channel
