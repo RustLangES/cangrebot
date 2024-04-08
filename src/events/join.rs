@@ -58,8 +58,14 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
     gen_welcome::generate(
         "./static/welcome_background.png",
         &avatar,
-        &member.user.global_name.clone().unwrap_or(member.user.name.clone()),
-        None,
+        &member
+            .user
+            .global_name
+            .clone()
+            .unwrap_or(member.user.name.clone()),
+        guild_id
+            .to_guild_cached(ctx)
+            .map(|g| g.member_count as usize),
         include_bytes!("../../static/fonts/WorkSans-Bold.ttf"),
         include_bytes!("../../static/fonts/WorkSans-Regular.ttf"),
         &output_path,
