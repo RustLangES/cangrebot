@@ -1,5 +1,4 @@
 use anyhow::Result;
-use plantita_welcomes::create_welcome::combine_images;
 use serenity::all::{CreateAttachment, CreateMessage};
 use serenity::{model::prelude::*, prelude::*};
 use std::convert::TryFrom;
@@ -52,15 +51,27 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
         .avatar_url()
         .unwrap_or_else(|| member.user.default_avatar_url());
     let response = reqwest::get(avatar_url).await?;
-    let bytes = response.bytes().await?;
-
-    let img = image::load_from_memory(&bytes)?;
-    img.resize(256, 256, image::imageops::Lanczos3);
-    let mut background = image::open("./static/background.png")?;
+    let avatar = response.bytes().await?;
 
     let output_path = format!("/tmp/{}_welcome.png", member.user.name);
-    combine_images(&mut background, &img, 74, 74, 372)?;
-    background.save(output_path.as_str())?;
+
+    gen_welcome::generate(
+        "./static/welcome_background.png",
+        &avatar,
+        &member
+            .user
+            .global_name
+            .clone()
+            .unwrap_or(member.user.name.clone()),
+        guild_id
+            .to_guild_cached(ctx)
+            .map(|g| g.member_count as usize),
+        include_bytes!("../../static/fonts/WorkSans-Bold.ttf"),
+        include_bytes!("../../static/fonts/WorkSans-Regular.ttf"),
+        &output_path,
+    )
+    .expect("Cannot generate welcome image");
+
     let attachment = CreateAttachment::path(output_path.as_str()).await?;
 
     let msg = msg_channel
@@ -86,4 +97,3 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
 
     Ok(())
 }
-

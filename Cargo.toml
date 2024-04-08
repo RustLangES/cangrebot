@@ -1,3 +1,5 @@
+workspace = { members = ["crates/gen_welcome"] }
+
 [package]
 name = "cangrebot"
 version = "0.1.0"
@@ -36,14 +38,14 @@ scraper = { version = "0.19.0", features = [
     "deterministic",
     "atomic",
 ] }
-plantita_welcomes = { git = "https://github.com/CrawKatt/plantita_welcomes.git" }
-image = "0.24.7"
 symphonia = { version = "0.5.3", default-features = false, features = [
     "mp3",
     "ogg",
     "wav",
 ] }
 axum = "0.7.5"
+
+gen_welcome = { version = "0.1.0", path = "crates/gen_welcome" }
 
 [dependencies.parking_lot]
 version = "0.12"
