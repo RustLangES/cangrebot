@@ -10,6 +10,7 @@ use serenity::{
     model::prelude::{GuildId, Interaction, Member, Ready},
     prelude::{Context, EventHandler},
 };
+use serenity::all::Message;
 use tracing::{error, log::info};
 
 use crate::slash_commands::ping;
@@ -19,6 +20,7 @@ use slash_commands::id::run as id_run;
 use slash_commands::invite::run as invite_run;
 use slash_commands::ping::run as ping_run;
 use slash_commands::sugerencia;
+use crate::events::anti_spam::{extract_link, spam_checker};
 
 pub struct Handler {
     guild_id: u64,
@@ -34,6 +36,21 @@ impl Handler {
 impl EventHandler for Handler {
     async fn guild_member_addition(&self, ctx: Context, member: Member) {
         guild_member_addition(&ctx, &member.guild_id, &member).await;
+    }
+
+    async fn message(&self, ctx: Context, new_message: Message) {
+        if extract_link(&new_message.content).is_some() {
+            let message_content = Arc::new(new_message.content.to_string());
+            spam_checker(
+                message_content,
+                new_message.channel_id,
+                &ctx,
+                604800,
+                &new_message,
+                new_message.guild_id.unwrap(),
+            ).await.unwrap_or_default();
+        }
+
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {
