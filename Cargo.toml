@@ -44,9 +44,7 @@ symphonia = { version = "0.5.3", default-features = false, features = [
     "wav",
 ] }
 axum = "0.7.5"
-once_cell = "1.18.0"
 regex = "1.10.2"
-chrono = "0.4.31"
 
 gen_welcome = { version = "0.1.0", path = "crates/gen_welcome" }
 

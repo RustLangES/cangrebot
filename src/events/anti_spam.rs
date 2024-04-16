@@ -1,12 +1,9 @@
-use std::sync::Arc;
-use once_cell::sync::Lazy;
+use std::sync::{Arc, LazyLock};
 use regex::Regex;
 use tokio::sync::Mutex;
 use serenity::all::{Channel, ChannelId, Context, GetMessages, GuildId, Member, Message, Timestamp, UserId};
 use std::time::Instant;
-use chrono::Utc;
 use serenity::all::standard::CommandResult;
-use tokio::time::Duration;
 
 #[derive(Debug)]
 pub struct MessageTracker {
@@ -55,7 +52,7 @@ impl MessageTrackerBuilder {
     }
 }
 
-static MESSAGE_TRACKER: Lazy<Mutex<Vec<MessageTracker>>> = Lazy::new(|| {
+static MESSAGE_TRACKER: LazyLock<Mutex<Vec<MessageTracker>>> = LazyLock::new(|| {
     Mutex::new(Vec::new())
 });
 
@@ -160,7 +157,8 @@ pub async fn apply_timeout(
     message: &Message,
 ) -> CommandResult {
 
-    let time = Timestamp::from(Utc::now() + Duration::from_secs(time_out_timer as u64));
+    let time = Timestamp::now().unix_timestamp() + time_out_timer;
+    let time = Timestamp::from_unix_timestamp(time)?;
     member.disable_communication_until_datetime(&ctx.http, time).await?;
     message.delete(&ctx.http).await?;
 
