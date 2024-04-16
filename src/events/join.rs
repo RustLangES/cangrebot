@@ -42,14 +42,11 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
 
     let join_msg_replaced = join_msg
         .replace("<mention>", &member.user.mention().to_string())
-        .replace("<username>", &member.user.name)
+        .replace("<username>", &member.distinct())
         .replace("<server>", &guild_id.name(ctx).unwrap_or_else(|| "".into()));
 
     // Download the user's avatar and create a welcome image
-    let avatar_url = member
-        .user
-        .avatar_url()
-        .unwrap_or_else(|| member.user.default_avatar_url());
+    let avatar_url = member.face();
     let response = reqwest::get(avatar_url).await?;
     let avatar = response.bytes().await?;
 
@@ -58,11 +55,7 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
     gen_welcome::generate(
         "./static/welcome_background.png",
         &avatar,
-        &member
-            .user
-            .global_name
-            .clone()
-            .unwrap_or(member.user.name.clone()),
+        &member.distinct(),
         guild_id
             .to_guild_cached(ctx)
             .map(|g| g.member_count as usize),
