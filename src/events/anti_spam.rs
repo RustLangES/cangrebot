@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use regex::Regex;
 use tokio::sync::Mutex;
-use serenity::all::{Channel, ChannelId, Context, GetMessages, GuildId, Member, Message, Timestamp, UserId};
+use serenity::all::{Channel, ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, GetMessages, GuildId, Member, Message, Timestamp, UserId};
 use std::time::Instant;
 use once_cell::sync::Lazy;
 use serenity::all::standard::CommandResult;
@@ -146,6 +146,29 @@ async fn delete_spam_messages(
             }
         }
     }
+
+    Ok(())
+}
+
+async fn create_embed(
+    ctx: &Context,
+    guild_id: GuildId,
+    author_id: UserId,
+    message_content: &str,
+) -> CommandResult {
+    let log_channel = ChannelId::new(1230718736206532628);
+    let author_user = author_id.to_user(&ctx.http).await?;
+    let author_member = guild_id.member(&ctx.http, author_id).await?;
+    let username = author_member.distinct();
+    let embed = CreateEmbed::default()
+        .title("Spam detectado")
+        .author(CreateEmbedAuthor::new(username)
+            .icon_url(author_user.face()))
+        .description(format!("El usuario <@{author_id}> Es sospechoso de enviar spam en el servidor.\nMensaje: {message_content}"))
+        .color(0x00ff_0000);
+    let builder = CreateMessage::default().embed(embed);
+
+    log_channel.send_message(&ctx.http, builder).await?;
 
     Ok(())
 }
