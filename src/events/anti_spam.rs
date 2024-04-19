@@ -1,8 +1,9 @@
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 use regex::Regex;
 use tokio::sync::Mutex;
 use serenity::all::{Channel, ChannelId, Context, GetMessages, GuildId, Member, Message, Timestamp, UserId};
 use std::time::Instant;
+use once_cell::sync::Lazy;
 use serenity::all::standard::CommandResult;
 
 #[derive(Debug)]
@@ -52,7 +53,7 @@ impl MessageTrackerBuilder {
     }
 }
 
-static MESSAGE_TRACKER: LazyLock<Mutex<Vec<MessageTracker>>> = LazyLock::new(|| {
+static MESSAGE_TRACKER: Lazy<Mutex<Vec<MessageTracker>>> = Lazy::new(|| {
     Mutex::new(Vec::new())
 });
 
@@ -91,7 +92,7 @@ pub async fn spam_checker(
         // Si el mensaje existe y el canal no está en la lista de canales, añade el canal a la lista de canales
         if message.channel_ids.contains(&channel_id) {
             // Si el mensaje se repite en el mismo canal, borra el vector
-            println!("Message repeated in the same channel, clearing the vector");
+            // Debug: println!("Message repeated in the same channel, clearing the vector");
             message_tracker.clear();
 
             return Ok(());
