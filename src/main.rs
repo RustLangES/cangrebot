@@ -1,5 +1,3 @@
-#![feature(lazy_cell)]
-
 use axum::{Router, ServiceExt};
 use events::daily_challenge::run_daily_challenge;
 use serenity::http::Http;
