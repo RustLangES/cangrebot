@@ -4,6 +4,10 @@ Bot de la comunidad de Discord de RustLang en Español.
 
 ## Desarrollo
 
+> [!IMPORTANT]
+> Antes de compilar el proyecto necesitas definir algunas variables de entorno para que compile correctamente
+> las variables a definir las tienes en el archivo [`./.env.example`](./.env.example)
+
 Para ejecutar el código en modo desarrollo tienes dos opciones:
 
 1. Recarga automática al guardar un archivo usando `shuttle`:
