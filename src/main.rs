@@ -17,8 +17,14 @@ pub mod events;
 pub mod general_commands;
 pub mod slash_commands;
 use config::setup::setup;
+use once_cell::sync::Lazy;
 
-const BOT_API_KEY: &str = env!("BOT_API_KEY");
+#[macro_use]
+extern crate litcrypt2;
+
+use_litcrypt!();
+
+static BOT_API_KEY: Lazy<String> = Lazy::new(|| lc!(env!("BOT_API_KEY")));
 
 pub struct CustomService {
     discord_bot: Client,
@@ -50,7 +56,7 @@ async fn auth_token(headers: HeaderMap, req: Request, next: Next) -> Result<Resp
     if headers
         .get("Authorization")
         .as_ref()
-        .is_some_and(|k| k.to_str().unwrap() == BOT_API_KEY)
+        .is_some_and(|k| k.to_str().unwrap() == BOT_API_KEY.as_str())
     {
         return Ok(next.run(req).await);
     }
