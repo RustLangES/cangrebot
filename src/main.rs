@@ -6,7 +6,6 @@ use axum::{middleware, Router, ServiceExt};
 use events::daily_challenge::run_daily_challenge;
 use events::send_message::send_message;
 use serenity::http::Http;
-use serenity::prelude::Context;
 use serenity::Client;
 use shuttle_runtime::SecretStore;
 use std::net::SocketAddr;

@@ -5,11 +5,9 @@ use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use serenity::all::{ForumTagId, MessageFlags};
-use serenity::builder::{CreateAllowedMentions, CreateForumPost, CreateForumTag, CreateMessage};
+use serenity::builder::{CreateAllowedMentions, CreateForumPost, CreateMessage};
 use serenity::http::Http;
 use serenity::model::prelude::ChannelId;
-use serenity::prelude::Context;
 use tracing::info;
 
 const PARTICIPANT_ROLE: u64 = 1224238464958992495;

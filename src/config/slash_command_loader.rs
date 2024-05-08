@@ -1,8 +1,5 @@
-use std::net::{IpAddr, SocketAddr};
-use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
-use crate::events::daily_challenge::{run_daily_challenge, DailyChallengeRequest};
 use crate::{events::join::guild_member_addition, slash_commands};
 use serenity::{
     all::{Command, CreateInteractionResponse, CreateInteractionResponseMessage},

@@ -8,22 +8,16 @@ use serenity::framework::{standard::macros::hook, StandardFramework};
 use serenity::model::channel::Message;
 use serenity::prelude::*;
 use shuttle_runtime::SecretStore;
-use songbird::driver::Bitrate;
-use songbird::input::cached::Compressed;
-use songbird::input::File;
 use songbird::SerenityInit;
 use tracing::{info, instrument};
 
-use crate::config::songbird_config::{CachedSound, SoundStore};
+use crate::config::songbird_config::SoundStore;
 
 use super::general_command_loader::GENERAL_GROUP;
 
 use super::slash_command_loader::Handler;
 
-pub async fn setup(
-    secret_store: SecretStore,
-    public_folder: PathBuf,
-) -> Result<Client, anyhow::Error> {
+pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyhow::Error> {
     // Get the discord token set in `Secrets.toml`
     let token = if let Some(token) = secret_store.get("DISCORD_TOKEN") {
         token
