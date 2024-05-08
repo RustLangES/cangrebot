@@ -17,9 +17,6 @@ jobs:
         with:
           submodules: recursive
       - uses: shuttle-hq/deploy-action@main
-        env:
-          LITCRYPT_ENCRYPT_KEY: ${{ secrets.LITCRYPT_ENCRYPT_KEY }}
-          BOT_API_KEY: ${{ secrets.BOT_API_KEY }}
         with:
           deploy-key: ${{ secrets.SHUTTLE_DEPLOY_KEY }}
           allow-dirty: "true"
@@ -27,3 +24,4 @@ jobs:
           secrets: |
             DISCORD_TOKEN = '${{ secrets.DISCORD_TOKEN }}'
             GUILD_ID = '${{ secrets.GUILD_ID }}'
+            BOT_APIKEY = '${{ secrets.BOT_APIKEY }}'
