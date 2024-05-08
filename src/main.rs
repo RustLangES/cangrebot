@@ -1,5 +1,9 @@
-use axum::{Router, ServiceExt};
-use events::{daily_challenge::run_daily_challenge, send_message::send_message};
+use axum::extract::Request;
+use axum::http::{HeaderMap, StatusCode};
+use axum::middleware::Next;
+use axum::response::Response;
+use axum::{middleware, Router, ServiceExt};
+use events::daily_challenge::run_daily_challenge;
 use serenity::http::Http;
 use serenity::prelude::Context;
 use serenity::Client;
@@ -13,6 +17,14 @@ pub mod events;
 pub mod general_commands;
 pub mod slash_commands;
 use config::setup::setup;
+use once_cell::sync::Lazy;
+
+#[macro_use]
+extern crate litcrypt2;
+
+use_litcrypt!();
+
+static BOT_API_KEY: Lazy<String> = Lazy::new(|| lc!(env!("BOT_API_KEY")));
 
 pub struct CustomService {
     discord_bot: Client,
@@ -40,10 +52,22 @@ impl shuttle_runtime::Service for CustomService {
     }
 }
 
+async fn auth_token(headers: HeaderMap, req: Request, next: Next) -> Result<Response, StatusCode> {
+    if headers
+        .get("Authorization")
+        .as_ref()
+        .is_some_and(|k| k.to_str().unwrap() == BOT_API_KEY.as_str())
+    {
+        return Ok(next.run(req).await);
+    }
+    Err(axum::http::StatusCode::UNAUTHORIZED)
+}
+
 fn build_router(ctx: Arc<Http>) -> Router {
     Router::new()
         .route("/daily_challenge", axum::routing::post(run_daily_challenge))
         .route("/send_message", axum::routing::post(send_message))
+        .layer(middleware::from_fn(auth_token))
         .with_state(ctx)
 }
 
