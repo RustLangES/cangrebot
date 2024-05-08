@@ -1,5 +1,5 @@
 use axum::{Router, ServiceExt};
-use events::daily_challenge::run_daily_challenge;
+use events::{daily_challenge::run_daily_challenge, send_message::send_message};
 use serenity::http::Http;
 use serenity::prelude::Context;
 use serenity::Client;
@@ -43,6 +43,7 @@ impl shuttle_runtime::Service for CustomService {
 fn build_router(ctx: Arc<Http>) -> Router {
     Router::new()
         .route("/daily_challenge", axum::routing::post(run_daily_challenge))
+        .route("/send_message", axum::routing::post(send_message))
         .with_state(ctx)
 }
 
