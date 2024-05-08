@@ -66,6 +66,7 @@ async fn auth_token(headers: HeaderMap, req: Request, next: Next) -> Result<Resp
 fn build_router(ctx: Arc<Http>) -> Router {
     Router::new()
         .route("/daily_challenge", axum::routing::post(run_daily_challenge))
+        .route("/send_message", axum::routing::post(send_message))
         .layer(middleware::from_fn(auth_token))
         .with_state(ctx)
 }
