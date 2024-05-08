@@ -4,6 +4,7 @@ use axum::middleware::Next;
 use axum::response::Response;
 use axum::{middleware, Router, ServiceExt};
 use events::daily_challenge::run_daily_challenge;
+use events::send_message::send_message;
 use serenity::http::Http;
 use serenity::prelude::Context;
 use serenity::Client;
@@ -24,7 +25,7 @@ extern crate litcrypt2;
 
 use_litcrypt!();
 
-static BOT_API_KEY: Lazy<String> = Lazy::new(|| lc!(env!("BOT_API_KEY")));
+static BOT_API_KEY: Lazy<String> = Lazy::new(|| lc!(env!("BOT_APIKEY")));
 
 pub struct CustomService {
     discord_bot: Client,
