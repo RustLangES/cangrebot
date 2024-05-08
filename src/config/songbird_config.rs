@@ -1,13 +1,11 @@
-
 use std::{collections::HashMap, sync::Arc};
 
 use serenity::prelude::TypeMapKey;
 use songbird::input::{
-        cached::{Compressed, Memory},
-        Input,
-    };
+    cached::{Compressed, Memory},
+    Input,
+};
 use tokio::sync::Mutex;
-
 
 pub enum CachedSound {
     Compressed(Compressed),
@@ -18,9 +16,9 @@ impl From<&CachedSound> for Input {
     fn from(obj: &CachedSound) -> Self {
         use CachedSound::*;
         match obj {
-            Compressed(c) => c.new_handle()
-                .into(),
-            Uncompressed(u) => u.new_handle()
+            Compressed(c) => c.new_handle().into(),
+            Uncompressed(u) => u
+                .new_handle()
                 .try_into()
                 .expect("Failed to create decoder for Memory source."),
         }

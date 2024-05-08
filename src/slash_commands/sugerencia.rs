@@ -1,4 +1,7 @@
-use serenity::all::{CommandDataOption, CommandDataOptionValue, CommandOptionType, CommandType, CreateCommand, CreateCommandOption, CreateThread};
+use serenity::all::{
+    CommandDataOption, CommandDataOptionValue, CommandOptionType, CommandType, CreateCommand,
+    CreateCommandOption, CreateThread,
+};
 
 use serenity::model::prelude::{ChannelId, ReactionType};
 use serenity::model::user::User;
@@ -10,26 +13,46 @@ pub fn register() -> CreateCommand {
         .description("Crea, Modifica y administra las sugerencias :D")
         .kind(CommandType::ChatInput)
         .add_option(
-            CreateCommandOption::new(CommandOptionType::SubCommand, "nueva", "Crea una sugerencia")
-                .required(false)
-                .add_sub_option(
-                    CreateCommandOption::new(CommandOptionType::String, "titulo", "Agrega un Titulo a tu sugerencia")
-                        .required(true)
-                        .min_length(10)
+            CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "nueva",
+                "Crea una sugerencia",
+            )
+            .required(false)
+            .add_sub_option(
+                CreateCommandOption::new(
+                    CommandOptionType::String,
+                    "titulo",
+                    "Agrega un Titulo a tu sugerencia",
                 )
-                .add_sub_option(
-                    CreateCommandOption::new(CommandOptionType::String, "contenido", "Cuentanos acerca de tu sugerencia")
-                        .required(true)
-                        .min_length(50)
+                .required(true)
+                .min_length(10),
+            )
+            .add_sub_option(
+                CreateCommandOption::new(
+                    CommandOptionType::String,
+                    "contenido",
+                    "Cuentanos acerca de tu sugerencia",
                 )
+                .required(true)
+                .min_length(50),
+            ),
         )
         .add_option(
-            CreateCommandOption::new(CommandOptionType::SubCommand, "implementada", "Marca una sugerencia como implementada")
-                .required(false)
+            CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "implementada",
+                "Marca una sugerencia como implementada",
+            )
+            .required(false),
         )
         .add_option(
-            CreateCommandOption::new(CommandOptionType::SubCommand, "cancelada", "Marca una sugerencia como cancelada o que no se realizara")
-                .required(false)
+            CreateCommandOption::new(
+                CommandOptionType::SubCommand,
+                "cancelada",
+                "Marca una sugerencia como cancelada o que no se realizara",
+            )
+            .required(false),
         )
 }
 
@@ -92,10 +115,7 @@ pub async fn run_create(ctx: &Context, options: CommandDataOptionValue, user: &U
     msg.react(&ctx, reject_reaction).await.unwrap();
 
     let builder = CreateThread::new(name.to_string()).auto_archive_duration(4320.into());
-    msg_channel
-        .create_thread(ctx, builder)
-        .await
-        .unwrap();
+    msg_channel.create_thread(ctx, builder).await.unwrap();
 
     "Sugerencia Creada".to_string()
 }

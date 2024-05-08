@@ -1,10 +1,13 @@
-use std::sync::Arc;
-use regex::Regex;
-use tokio::sync::Mutex;
-use serenity::all::{Channel, ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, GetMessages, GuildId, Member, Message, Timestamp, UserId};
-use std::time::Instant;
 use once_cell::sync::Lazy;
+use regex::Regex;
 use serenity::all::standard::CommandResult;
+use serenity::all::{
+    Channel, ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, GetMessages,
+    GuildId, Member, Message, Timestamp, UserId,
+};
+use std::sync::Arc;
+use std::time::Instant;
+use tokio::sync::Mutex;
 
 #[derive(Debug)]
 pub struct MessageTracker {
@@ -53,12 +56,12 @@ impl MessageTrackerBuilder {
     }
 }
 
-static MESSAGE_TRACKER: Lazy<Mutex<Vec<MessageTracker>>> = Lazy::new(|| {
-    Mutex::new(Vec::new())
-});
+static MESSAGE_TRACKER: Lazy<Mutex<Vec<MessageTracker>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
 pub fn extract_link(text: &str) -> Option<String> {
-    Regex::new(r"(https?://\S+)").map_or(None, |url_re| url_re.find(text).map(|m| m.as_str().to_string()))
+    Regex::new(r"(https?://\S+)").map_or(None, |url_re| {
+        url_re.find(text).map(|m| m.as_str().to_string())
+    })
 }
 
 pub async fn spam_checker(
@@ -67,16 +70,13 @@ pub async fn spam_checker(
     ctx: &Context,
     time: i64,
     new_message: &Message,
-    guild_id: GuildId
+    guild_id: GuildId,
 ) -> CommandResult {
     let author_id = new_message.author.id;
     let mut member = guild_id.member(&ctx.http, new_message.author.id).await?;
     let mut message_tracker = MESSAGE_TRACKER.lock().await;
 
-    if let Some(last_message) = message_tracker
-        .iter()
-        .last()
-    {
+    if let Some(last_message) = message_tracker.iter().last() {
         if last_message.author_id == author_id && last_message.message_content != message_content {
             message_tracker.clear();
         }
@@ -109,7 +109,9 @@ pub async fn spam_checker(
             .build()?;
 
         message_tracker.push(message);
-        message_tracker.last_mut().ok_or("Failed to get the last message tracker")?
+        message_tracker
+            .last_mut()
+            .ok_or("Failed to get the last message tracker")?
     };
 
     if message.channel_ids.len() >= 3 {
@@ -136,7 +138,7 @@ async fn delete_spam_messages(
     for channel_id in &message.channel_ids {
         let channel = channel_id.to_channel(ctx).await?;
         let Channel::Guild(channel) = channel else {
-            return Ok(())
+            return Ok(());
         };
 
         let messages = channel.messages(&ctx.http, GetMessages::new()).await?;
@@ -157,10 +159,11 @@ pub async fn apply_timeout(
     time_out_timer: i64,
     message: &Message,
 ) -> CommandResult {
-
     let time = Timestamp::now().unix_timestamp() + time_out_timer;
     let time = Timestamp::from_unix_timestamp(time)?;
-    member.disable_communication_until_datetime(&ctx.http, time).await?;
+    member
+        .disable_communication_until_datetime(&ctx.http, time)
+        .await?;
     message.delete(&ctx.http).await?;
 
     Ok(())

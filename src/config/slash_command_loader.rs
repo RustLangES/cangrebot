@@ -1,15 +1,16 @@
 use std::sync::Arc;
 
 use crate::{events::join::guild_member_addition, slash_commands};
+use serenity::all::Message;
 use serenity::{
     all::{Command, CreateInteractionResponse, CreateInteractionResponseMessage},
     async_trait,
     model::prelude::{GuildId, Interaction, Member, Ready},
     prelude::{Context, EventHandler},
 };
-use serenity::all::Message;
 use tracing::{error, log::info};
 
+use crate::events::anti_spam::{extract_link, spam_checker};
 use crate::slash_commands::ping;
 use slash_commands::attachmentinput::run as attachmentinput_run;
 use slash_commands::explica::run as explica_run;
@@ -17,7 +18,6 @@ use slash_commands::id::run as id_run;
 use slash_commands::invite::run as invite_run;
 use slash_commands::ping::run as ping_run;
 use slash_commands::sugerencia;
-use crate::events::anti_spam::{extract_link, spam_checker};
 
 pub struct Handler {
     guild_id: u64,
@@ -45,9 +45,10 @@ impl EventHandler for Handler {
                 604800,
                 &new_message,
                 new_message.guild_id.unwrap(),
-            ).await.unwrap_or_default();
+            )
+            .await
+            .unwrap_or_default();
         }
-
     }
 
     async fn interaction_create(&self, ctx: Context, interaction: Interaction) {

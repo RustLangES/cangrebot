@@ -3,10 +3,14 @@ use serenity::model::application::{CommandOptionType, ResolvedOption, ResolvedVa
 
 pub fn run(options: &[ResolvedOption]) -> String {
     if let Some(ResolvedOption {
-                    value: ResolvedValue::Attachment(attachment), ..
-                }) = options.first()
+        value: ResolvedValue::Attachment(attachment),
+        ..
+    }) = options.first()
     {
-        format!("Attachment name: {}, attachment size: {}", attachment.filename, attachment.size)
+        format!(
+            "Attachment name: {}, attachment size: {}",
+            attachment.filename, attachment.size
+        )
     } else {
         "Please provide a valid attachment".to_string()
     }

@@ -16,8 +16,8 @@ pub fn register() -> CreateCommand {
                 "number",
                 "A float from -3.3 to 234.5",
             )
-                .min_number_value(-3.3)
-                .max_number_value(234.5)
-                .required(true),
+            .min_number_value(-3.3)
+            .max_number_value(234.5)
+            .required(true),
         )
 }

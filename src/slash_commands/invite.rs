@@ -5,6 +5,5 @@ pub fn run(_options: &[CommandDataOption]) -> String {
 }
 
 pub fn register() -> CreateCommand {
-    CreateCommand::new("invite")
-        .description("Retorna el link de invitación del servidor")
+    CreateCommand::new("invite").description("Retorna el link de invitación del servidor")
 }

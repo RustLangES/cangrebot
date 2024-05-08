@@ -1,13 +1,12 @@
 use serenity::all::{
-    CommandOptionType, CreateCommand,
-    CreateCommandOption, ResolvedOption,
-    ResolvedValue
+    CommandOptionType, CreateCommand, CreateCommandOption, ResolvedOption, ResolvedValue,
 };
 
 pub fn run(options: &[ResolvedOption]) -> String {
     if let Some(ResolvedOption {
-                    value: ResolvedValue::User(user, _), ..
-                }) = options.first()
+        value: ResolvedValue::User(user, _),
+        ..
+    }) = options.first()
     {
         format!("{}'s id is {}", user.tag(), user.id)
     } else {
@@ -16,8 +15,10 @@ pub fn run(options: &[ResolvedOption]) -> String {
 }
 
 pub fn register() -> CreateCommand {
-    CreateCommand::new("id").description("Get a user id").add_option(
-        CreateCommandOption::new(CommandOptionType::User, "id", "The user to lookup")
-            .required(true),
-    )
+    CreateCommand::new("id")
+        .description("Get a user id")
+        .add_option(
+            CreateCommandOption::new(CommandOptionType::User, "id", "The user to lookup")
+                .required(true),
+        )
 }
