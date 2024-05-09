@@ -17,7 +17,7 @@ pub fn generate(
     let bold = FontRef::try_from_slice(bold_font).expect("Cannot load bold font");
     let regular = FontRef::try_from_slice(regular_font).expect("Cannot load regular font");
 
-    let avatar = image::load_from_memory(&avatar)?;
+    let avatar = image::load_from_memory(avatar)?;
     let avatar = avatar.resize(256, 256, image::imageops::Lanczos3);
     let avatar = round(&avatar);
     let mut background = image::open(bg)?;

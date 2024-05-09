@@ -55,13 +55,19 @@ async fn auth_token(
     req: Request,
     next: Next,
 ) -> Result<Response, StatusCode> {
-    if headers
-        .get("Authorization")
+    let header_key = headers.get("Authorization");
+    if header_key
         .as_ref()
         .is_some_and(|k| k.to_str().unwrap() == &secrets.bot_apikey)
     {
         return Ok(next.run(req).await);
     }
+
+    tracing::error!(
+        "UNAUTHORIZED: {header_key:?} - Local: {}",
+        secrets.bot_apikey
+    );
+
     Err(axum::http::StatusCode::UNAUTHORIZED)
 }
 

@@ -26,15 +26,18 @@ pub async fn send_message(
         roles,
     }): Json<SendMessagePayload>,
 ) -> impl IntoResponse {
-    info!("Running create suggestion");
+    info!("Running Send Message from API");
     let msg_channel = ChannelId::new(channel_id);
     let message = CreateMessage::new()
         .content(message)
         .allowed_mentions(CreateAllowedMentions::new().roles(roles));
 
-    if msg_channel.send_message(&ctx, message).await.is_ok() {
+    let res = msg_channel.send_message(&ctx, message).await;
+    if res.is_ok() {
         return (StatusCode::OK, "Ok");
     }
+
+    tracing::error!("Cannot send message: {res:?}");
 
     (StatusCode::INTERNAL_SERVER_ERROR, "Cannot send message")
 }

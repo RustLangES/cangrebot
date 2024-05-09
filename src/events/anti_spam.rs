@@ -2,8 +2,7 @@ use once_cell::sync::Lazy;
 use regex::Regex;
 use serenity::all::standard::CommandResult;
 use serenity::all::{
-    Channel, ChannelId, Context, CreateEmbed, CreateEmbedAuthor, CreateMessage, GetMessages,
-    GuildId, Member, Message, Timestamp, UserId,
+    Channel, ChannelId, Context, GetMessages, GuildId, Member, Message, Timestamp, UserId,
 };
 use std::sync::Arc;
 use std::time::Instant;
