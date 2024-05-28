@@ -27,7 +27,7 @@ pub async fn run_daily_challenge(
         tag_name,
     }): Json<DailyChallengeRequest>,
 ) -> impl IntoResponse {
-    info!("Running create suggestion");
+    info!("Running daily challenge events");
     let msg_channel = ChannelId::new(1219703076944871616_u64.into());
 
     let Ok(forum) = msg_channel.to_channel(&ctx).await else {
