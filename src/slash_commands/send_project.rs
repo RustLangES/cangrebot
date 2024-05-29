@@ -16,7 +16,7 @@ struct Project {
 }
 
 async fn send_succes_message(ctx: &Context, channel_id: &ChannelId, user: Mention, pr: String) {
-    channel_id.say(ctx, format!("Se ha creado una Pull Request para agregar este proyecto en la pagina web de RustLangES.\n\n> {user} si deseas modificar o agregar detalles de tu proyecto, porfavor hazlo desde el siguiente enlace https://github.com/RustLangES/proyectos-comunitarios/pull/{pr}")).await.unwrap()
+    channel_id.say(ctx, format!("Se ha creado una Pull Request para agregar este proyecto en la pagina web de RustLangES.\n\n> {user} si deseas modificar o agregar detalles de tu proyecto, porfavor hazlo desde el siguiente enlace https://github.com/RustLangES/proyectos-comunitarios/pull/{pr}")).await.unwrap();
 }
 
 pub async fn run(ctx: &Context, channel_id: &ChannelId, options: &[CommandDataOption]) -> String {
@@ -25,18 +25,18 @@ pub async fn run(ctx: &Context, channel_id: &ChannelId, options: &[CommandDataOp
         button_bg_color: "white".to_owned(),
         ..Default::default()
     };
-    let user;
+    let mut user = None;
 
     for o in options {
         match o.name.as_str() {
             "autor" => {
                 if let CommandDataOptionValue::User(user_id) = o.value {
-                    user = user_id;
+                    user = Some(user_id);
                 }
             }
             "nombre" => {
                 if let CommandDataOptionValue::String(v) = &o.value {
-                    project.name = v.split(' ').collect();
+                    project.name = v.split(' ').map(String::from).collect();
                     project.brand_src = v.chars().next().unwrap_or('R').to_string();
                 }
             }
@@ -66,7 +66,7 @@ pub async fn run(ctx: &Context, channel_id: &ChannelId, options: &[CommandDataOp
     }
 
     // Extract empty values from thread
-    send_succes_message(ctx, channel_id, user.mention(), "14".to_owned()).await;
+    send_succes_message(ctx, channel_id, user.unwrap().mention(), "14".to_owned()).await;
 
     "Proyecto enviado correctamente".to_owned()
 }
