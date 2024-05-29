@@ -41,11 +41,11 @@ pub async fn send_message(
 
     for message in &messages {
         let message = CreateMessage::new()
-            .content(message)
-            .allowed_mentions(CreateAllowedMentions::new().roles(roles));
+            .content(*message)
+            .allowed_mentions(CreateAllowedMentions::new().roles(roles.clone()));
 
         if let Err(err) = msg_channel.send_message(&ctx, message).await {
-            tracing::error!("Cannot send message: {res:?}");
+            tracing::error!("Cannot send message: {err:?}");
             return (StatusCode::INTERNAL_SERVER_ERROR, "Cannot send message");
         }
     }
