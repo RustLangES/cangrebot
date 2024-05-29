@@ -4,6 +4,7 @@ pub mod id;
 pub mod invite;
 pub mod numberinput;
 pub mod ping;
+pub mod send_project;
 pub mod sugerencia;
 pub mod welcome;
 pub mod wonderful_command;
