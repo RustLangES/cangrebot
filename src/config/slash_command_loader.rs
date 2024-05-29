@@ -11,7 +11,7 @@ use serenity::{
 use tracing::{error, log::info};
 
 use crate::events::anti_spam::{extract_link, spam_checker};
-use crate::slash_commands::ping;
+use crate::slash_commands::{ping, send_project};
 use slash_commands::attachmentinput::run as attachmentinput_run;
 use slash_commands::explica::run as explica_run;
 use slash_commands::id::run as id_run;
@@ -61,6 +61,9 @@ impl EventHandler for Handler {
                 "id" => id_run(&command.data.options()),
                 "attachmentinput" => attachmentinput_run(&command.data.options()),
                 "explica" => explica_run(&command.data.options),
+                "showcase" => {
+                    send_project::run(&ctx, &command.channel_id, &command.data.options).await
+                }
                 "sugerencia" => {
                     sugerencia::run(
                         &ctx,
@@ -96,6 +99,7 @@ impl EventHandler for Handler {
                     slash_commands::invite::register(),
                     slash_commands::welcome::register(),
                     slash_commands::attachmentinput::register(),
+                    send_project::register(),
                     sugerencia::register(),
                 ],
             )
