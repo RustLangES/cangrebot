@@ -3,6 +3,8 @@ use serenity::all::{CreateAttachment, CreateMessage};
 use serenity::{model::prelude::*, prelude::*};
 use std::convert::TryFrom;
 
+const DEFAULT_NEWER_ROLE: u64 = 1263861260932485194;
+
 const WELCOME_MESSAGE: &str = r#"¡Bienvenidx a la Comunidad de RustLangES!
 
 Nos alegra que hayas decidido unirte a nuestra comunidad. Aquí encontrarás varios canales dedicados a diferentes aspectos de nuestra comunidad:
@@ -80,7 +82,10 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
 
     // Convert string emoji to ReactionType to allow custom emojis
     let reaction = ReactionType::try_from("👋")?;
-    msg.react(&ctx, reaction).await?;
+    msg.react(ctx, reaction).await?;
+
+    // asign default role to track
+    member.add_role(ctx, DEFAULT_NEWER_ROLE).await?;
 
     // Send DM with guides
     member
