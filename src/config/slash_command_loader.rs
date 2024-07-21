@@ -3,7 +3,7 @@ use std::sync::Arc;
 use crate::{events::join::guild_member_addition, slash_commands};
 use serenity::all::Message;
 use serenity::{
-    all::{Command, CreateInteractionResponse, CreateInteractionResponseMessage},
+    all::{CreateInteractionResponse, CreateInteractionResponseMessage},
     async_trait,
     model::prelude::{GuildId, Interaction, Member, Ready},
     prelude::{Context, EventHandler},
@@ -12,7 +12,6 @@ use tracing::{error, log::info};
 
 use crate::events::anti_spam::{extract_link, spam_checker};
 use crate::slash_commands::ping;
-use slash_commands::attachmentinput::run as attachmentinput_run;
 use slash_commands::explica::run as explica_run;
 use slash_commands::id::run as id_run;
 use slash_commands::invite::run as invite_run;
@@ -59,7 +58,6 @@ impl EventHandler for Handler {
                 "ping" => ping_run(),
                 "invite" => invite_run(&command.data.options),
                 "id" => id_run(&command.data.options()),
-                "attachmentinput" => attachmentinput_run(&command.data.options()),
                 "explica" => explica_run(&command.data.options),
                 "sugerencia" => {
                     sugerencia::run(
@@ -70,7 +68,7 @@ impl EventHandler for Handler {
                     )
                     .await
                 }
-                _ => "not implemented :(".to_string(),
+                _ => "Este comando no esa implementado, pero puedes hacer una sugerencia `/sugerencia`".to_string(),
             };
 
             let data = CreateInteractionResponseMessage::new().content(content);
@@ -94,8 +92,6 @@ impl EventHandler for Handler {
                     ping::register(),
                     slash_commands::id::register(),
                     slash_commands::invite::register(),
-                    slash_commands::welcome::register(),
-                    slash_commands::attachmentinput::register(),
                     sugerencia::register(),
                 ],
             )
@@ -103,15 +99,5 @@ impl EventHandler for Handler {
         {
             error!("Cannot create slash commands: {}", error);
         };
-
-        // info!("I now have the following guild slash commands: {:#?}", commands);
-
-        let _guild_command = Command::create_global_command(
-            &ctx.http,
-            slash_commands::wonderful_command::register(),
-        )
-        .await;
-
-        // info!("I created the following global slash command: {:#?}", guild_command);
     }
 }
