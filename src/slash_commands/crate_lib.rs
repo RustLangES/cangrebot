@@ -9,15 +9,15 @@ use tracing::info;
 
 use crate::utils::ToSnakeCase;
 
-const MESSAGE: &str = r#"## Crate _@crate_name@_
+const MESSAGE: &str = r#"## [@crate_name@](https://crates.io/crates/@crate_name@)
 @description@
+@keywords@
 
 @last_version@
 @stable_version@
 @doc@
 @repo@
-@web@,
-"#;
+@web@"#;
 
 enum TypeSearch {
     Get,
@@ -36,6 +36,7 @@ struct CratesDetails {
     description: String,
     max_stable_version: String,
     newest_version: String,
+    keywords: Vec<String>,
     homepage: Option<String>,
     repository: Option<String>,
     documentation: Option<String>,
@@ -154,6 +155,7 @@ async fn fetch_crate(
             CratesDetails {
                 description,
                 documentation,
+                keywords,
                 homepage,
                 max_stable_version,
                 name,
@@ -175,7 +177,19 @@ async fn fetch_crate(
         )
         .replace(
             "@stable_version@",
-            &format!("Última Version Estable: {max_stable_version}"),
+            &(if max_stable_version == newest_version {
+                String::new()
+            } else {
+                format!("Última Version Estable: {max_stable_version}")
+            }),
+        )
+        .replace(
+            "@keywords@",
+            &(if keywords.is_empty() {
+                String::new()
+            } else {
+                format!("-# {}", keywords.join(" | "))
+            }),
         );
 
     let res = match search_type {
