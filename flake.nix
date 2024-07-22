@@ -2,7 +2,7 @@
   description = "cangrebot";
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-    cranix.url = "github:Lemin-n/cranix/2af6b2e71577bb8836b10e28f3267f2c5342a8fd";
+    cranix.url = "github:Lemin-n/cranix/8da12421ae670ab9b0884091a429332f6ae5a1c7";
     crane.url = "github:ipetkov/crane";
     fenix.url = "github:nix-community/fenix";
     flake-utils.url = "github:numtide/flake-utils";

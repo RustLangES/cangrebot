@@ -31,7 +31,7 @@ in
     # crane: cargo and artifacts manager
     craneLib = crane.${system}.overrideToolchain toolchain;
     # cranix: extends crane building system with workspace bin building and Mold + Cranelift integrations
-    cranixLib = craneLib.overrideScope' (cranix.${system}.craneOverride);
+    cranixLib = craneLib.overrideScope (cranix.${system}.craneOverride);
 
     # buildInputs for Examples
     buildInputs = with pkgs; [
