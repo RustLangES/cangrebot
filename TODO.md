@@ -1,6 +1,6 @@
-- [ ] Eliminar comandos innecesarios
+- [x] Eliminar comandos innecesarios
 - [ ] Reestruturar el proyecto
-- [ ] Enviar ejercicios diarios a un canal especifico consumiendo la [api](https://www.codewars.com/trainer/peek/rust/random?dequeue=false) de [codewars](https://codewars.com)
-  - [ ] Envia el mensaje y crea un hilo a partir de este para que los miembros del discor dpuedan comentar sobre el ejercicio
-  - [ ] Menciona al rol de `@codewars` para notificarles sobre el nuevo ejercicio
-- [ ] Permitir que las sugerencias sean mensages nomarles y no un sistema de inputs
+- [x] Enviar ejercicios diarios a un canal especifico consumiendo la [api](https://www.codewars.com/trainer/peek/rust/random?dequeue=false) de [codewars](https://codewars.com)
+  - [x] Envia el mensaje y crea un hilo a partir de este para que los miembros del discor dpuedan comentar sobre el ejercicio
+  - [x] Menciona al rol de `@codewars` para notificarles sobre el nuevo ejercicio
+- [ ] Permitir que las sugerencias sean mensages normales y no un sistema de inputs
