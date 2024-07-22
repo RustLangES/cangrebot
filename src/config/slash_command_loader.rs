@@ -12,6 +12,7 @@ use tracing::{error, log::info};
 
 use crate::events::anti_spam::{extract_link, spam_checker};
 use crate::slash_commands::ping;
+use slash_commands::crate_lib;
 use slash_commands::explica::run as explica_run;
 use slash_commands::id::run as id_run;
 use slash_commands::invite::run as invite_run;
@@ -20,11 +21,17 @@ use slash_commands::sugerencia;
 
 pub struct Handler {
     guild_id: u64,
+    client: reqwest::Client,
 }
 
 impl Handler {
     pub fn new(guild_id: u64) -> Self {
-        Self { guild_id }
+        Self {
+            guild_id,
+            client: reqwest::ClientBuilder::new()
+                .build()
+                .expect("Cannot create reqwest client"),
+        }
     }
 }
 
@@ -68,6 +75,9 @@ impl EventHandler for Handler {
                     )
                     .await
                 }
+                "crate" => {
+                    crate_lib::run(&self.client, &command.data.options).await
+                }
                 _ => "Este comando no esa implementado, pero puedes hacer una sugerencia `/sugerencia`".to_string(),
             };
 
@@ -93,6 +103,7 @@ impl EventHandler for Handler {
                     slash_commands::id::register(),
                     slash_commands::invite::register(),
                     sugerencia::register(),
+                    crate_lib::register(),
                 ],
             )
             .await
