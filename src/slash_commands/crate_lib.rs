@@ -7,6 +7,8 @@ use serenity::all::{
 
 use tracing::info;
 
+use crate::utils::ToSnakeCase;
+
 const MESSAGE: &str = r#"## Crate _@crate_name@_
 @description@
 
@@ -131,7 +133,10 @@ async fn fetch_crate(
     };
 
     let res = client
-        .get(format!("https://crates.io/api/v1/crates/{crate_name}"))
+        .get(format!(
+            "https://crates.io/api/v1/crates/{}",
+            crate_name.to_snake_case()
+        ))
         .header("User-Agent", "RustLangES Automation Agent")
         .send()
         .await?

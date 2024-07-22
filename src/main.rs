@@ -16,6 +16,7 @@ pub mod config;
 pub mod events;
 pub mod general_commands;
 pub mod slash_commands;
+pub mod utils;
 use config::setup::setup;
 
 #[derive(Clone, Debug)]
