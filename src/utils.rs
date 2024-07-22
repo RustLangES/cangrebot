@@ -49,3 +49,20 @@ where
         buffer
     }
 }
+
+const MASKS: [(&str, &str); 4] = [
+    ("https://github.com/", "github:"),
+    ("https://gitlab.com/", "gitlab:"),
+    ("https://docs.rs/", "docs.rs:"),
+    ("https://crates.io/crates", "crates:"),
+];
+
+pub fn mask_url(url: &str) -> String {
+    for (mask, repl) in &MASKS {
+        if url.starts_with(mask) {
+            return url.replace(mask, repl);
+        }
+    }
+
+    url.replace("https://", "").replace("http://", "")
+}

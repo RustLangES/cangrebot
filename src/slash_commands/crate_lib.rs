@@ -7,14 +7,12 @@ use serenity::all::{
 
 use tracing::info;
 
-use crate::utils::ToSnakeCase;
+use crate::utils::{mask_url, ToSnakeCase};
 
 const MESSAGE: &str = r#"## [@crate_name@](https://crates.io/crates/@crate_name@)
-@description@
-@keywords@
+@description@@keywords@
 
-@last_version@
-@stable_version@
+@last_version@@stable_version@
 @doc@
 @repo@
 @web@"#;
@@ -112,6 +110,11 @@ pub async fn run(client: &Client, options: &[CommandDataOption]) -> String {
     }
 }
 
+fn maskurl(u: String) -> String {
+    let masked = mask_url(&u);
+    format!("[{masked}]({u})")
+}
+
 async fn fetch_crate(
     client: &Client,
     search_type: TypeSearch,
@@ -173,14 +176,14 @@ async fn fetch_crate(
         .replace("@description@", &description)
         .replace(
             "@last_version@",
-            &format!("Última Version: {newest_version}"),
+            &format!("Última Version: ``{newest_version}``"),
         )
         .replace(
             "@stable_version@",
             &(if max_stable_version == newest_version {
                 String::new()
             } else {
-                format!("Última Version Estable: {max_stable_version}")
+                format!("\nÚltima Version Estable: ``{max_stable_version}``")
             }),
         )
         .replace(
@@ -188,7 +191,7 @@ async fn fetch_crate(
             &(if keywords.is_empty() {
                 String::new()
             } else {
-                format!("-# {}", keywords.join(" | "))
+                format!("\n-# {}", keywords.join(" | "))
             }),
         );
 
@@ -198,23 +201,29 @@ async fn fetch_crate(
                 "@doc@",
                 &format!(
                     "Documentación: {}",
-                    documentation.as_deref().unwrap_or("None")
+                    documentation.map(maskurl).as_deref().unwrap_or("None")
                 ),
             )
             .replace(
                 "@repo@",
-                &format!("Repositorio: {}", repository.as_deref().unwrap_or("None")),
+                &format!(
+                    "Repositorio: {}",
+                    repository.map(maskurl).as_deref().unwrap_or("None")
+                ),
             )
             .replace(
                 "@web@",
-                &format!("Página Web: {}", homepage.as_deref().unwrap_or("None")),
+                &format!(
+                    "Página Web: {}",
+                    homepage.map(maskurl).as_deref().unwrap_or("None")
+                ),
             ),
         TypeSearch::Docs => res
             .replace(
                 "@doc@",
                 &format!(
                     "Documentación: {}",
-                    documentation.as_deref().unwrap_or("None")
+                    documentation.map(maskurl).as_deref().unwrap_or("None")
                 ),
             )
             .replace("@repo@", "")
