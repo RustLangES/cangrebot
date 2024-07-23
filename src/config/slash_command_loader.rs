@@ -11,13 +11,6 @@ use serenity::{
 use tracing::{error, log::info};
 
 use crate::events::anti_spam::{extract_link, spam_checker};
-use crate::slash_commands::ping;
-use slash_commands::crate_lib;
-use slash_commands::explica::run as explica_run;
-use slash_commands::id::run as id_run;
-use slash_commands::invite::run as invite_run;
-use slash_commands::ping::run as ping_run;
-use slash_commands::sugerencia;
 
 pub struct Handler {
     guild_id: u64,
@@ -61,24 +54,30 @@ impl EventHandler for Handler {
         if let Interaction::Command(command) = interaction {
             // info!("Received command interaction: {:#?}", command);
 
-            let content = match command.data.name.as_str() {
-                "ping" => ping_run(),
-                "invite" => invite_run(&command.data.options),
-                "id" => id_run(&command.data.options()),
-                "explica" => explica_run(&command.data.options),
-                "sugerencia" => {
-                    sugerencia::run(
-                        &ctx,
-                        &command.channel_id,
-                        &command.data.options,
-                        &command.user,
-                    )
-                    .await
+            let content = {
+                use slash_commands::*;
+
+                match command.data.name.as_str() {
+                    "crate" => {
+                        crate_lib::run(&self.client, &command.data.options).await
+                    }
+                    "explica" => explica::run(&command.data.options),
+                    "invite" => invite::run(&command.data.options),
+                    "id" => id::run(&command.data.options()),
+                    "join" => join::run(&ctx, &command).await,
+                    "ping" => ping::run(),
+                    "play" => play::run(&self.client, &ctx, &command).await,
+                    "sugerencia" => {
+                        sugerencia::run(
+                            &ctx,
+                            &command.channel_id,
+                            &command.data.options,
+                            &command.user,
+                        )
+                        .await
+                    }
+                    _ => "Este comando no esa implementado, pero puedes hacer una sugerencia `/sugerencia`".to_string(),
                 }
-                "crate" => {
-                    crate_lib::run(&self.client, &command.data.options).await
-                }
-                _ => "Este comando no esa implementado, pero puedes hacer una sugerencia `/sugerencia`".to_string(),
             };
 
             let data = CreateInteractionResponseMessage::new().content(content);
@@ -94,16 +93,19 @@ impl EventHandler for Handler {
 
         let guild_id = GuildId::new(self.guild_id.into());
 
+        use slash_commands::*;
         if let Err(error) = guild_id
             .set_commands(
                 &ctx.http,
                 vec![
-                    slash_commands::explica::register(),
-                    ping::register(),
-                    slash_commands::id::register(),
-                    slash_commands::invite::register(),
-                    sugerencia::register(),
                     crate_lib::register(),
+                    explica::register(),
+                    id::register(),
+                    invite::register(),
+                    join::register(),
+                    ping::register(),
+                    play::register(),
+                    sugerencia::register(),
                 ],
             )
             .await
