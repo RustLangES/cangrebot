@@ -112,7 +112,7 @@ pub async fn run(client: &Client, options: &[CommandDataOption]) -> String {
 
 fn maskurl(u: String) -> String {
     let masked = mask_url(&u);
-    format!("[{masked}]({u})")
+    format!("[{masked}](<{u}>)")
 }
 
 async fn fetch_crate(
@@ -215,7 +215,12 @@ async fn fetch_crate(
                 "@web@",
                 &format!(
                     "Página Web: {}",
-                    homepage.map(maskurl).as_deref().unwrap_or("None")
+                    homepage
+                        .map(maskurl)
+                        .as_deref()
+                        .unwrap_or("None")
+                        .replace("<", "")
+                        .replace(">", "")
                 ),
             ),
         TypeSearch::Docs => res
