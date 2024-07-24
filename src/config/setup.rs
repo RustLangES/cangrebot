@@ -15,6 +15,8 @@ use crate::config::songbird_config::SoundStore;
 
 use super::general_command_loader::GENERAL_GROUP;
 
+use crate::events::read_github_links::ReadGithubLinkHandler;
+
 use super::slash_command_loader::Handler;
 
 pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyhow::Error> {
@@ -51,6 +53,7 @@ pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyh
 
     let client = Client::builder(token, intents)
         .event_handler(handler)
+        .event_handler(ReadGithubLinkHandler)
         .framework(framework)
         .register_songbird()
         .await
