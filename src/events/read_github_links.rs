@@ -29,6 +29,10 @@ pub fn parse_url(url: &str) -> Option<RangeOrIndex> {
         let start = caps.name("start").and_then(|m| m.as_str().parse::<i32>().ok());
         let end = caps.name("end").and_then(|m| m.as_str().parse::<i32>().ok());
 
+        if end < start {
+            return None;
+        }
+
         match (start, end) {
             (Some(start), Some(end)) => Some(RangeOrIndex::Range(
                 language,

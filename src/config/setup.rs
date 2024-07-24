@@ -12,8 +12,10 @@ use songbird::SerenityInit;
 use tracing::{info, instrument};
 
 use crate::config::songbird_config::SoundStore;
-use crate::events::read_github_links::ReadGithubLinkHandler;
+
 use super::general_command_loader::GENERAL_GROUP;
+
+use crate::events::read_github_links::ReadGithubLinkHandler;
 
 use super::slash_command_loader::Handler;
 
