@@ -1,6 +1,7 @@
 use crate::events::join::guild_member_addition;
 use crate::general_commands::meetups::MEETUPS_COMMAND;
 use crate::general_commands::ping::PING_COMMAND;
+use crate::general_commands::compile::COMPILE_COMMAND;
 use crate::general_commands::songbird_commands::DEAFEN_COMMAND;
 use crate::general_commands::songbird_commands::JOIN_COMMAND;
 use crate::general_commands::songbird_commands::LEAVE_COMMAND;
@@ -13,7 +14,7 @@ use serenity::{async_trait, prelude::Context};
 use serenity::{model::prelude::Member, prelude::EventHandler};
 
 #[group]
-#[commands(ping, meetups, deafen, join, leave, mute, ting, undeafen, unmute)]
+#[commands(ping, meetups, deafen, join, leave, mute, ting, undeafen, unmute, compile)]
 pub struct General;
 
 #[async_trait]

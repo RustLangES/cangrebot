@@ -2,3 +2,4 @@
 Secrets*.toml
 .vscode
 *.dca
+.idea
