@@ -1,10 +1,57 @@
+use std::collections::HashMap;
 use regex::{Captures, Regex};
 use reqwest::get;
-use serenity::all::{Context, EventHandler, Message};
+use serenity::all::{Context, CreateMessage, EventHandler, Message};
 use serenity::async_trait;
 use std::option::Option;
+use lazy_static::lazy_static;
+use serenity::constants::MESSAGE_CODE_LIMIT;
 
 pub struct ReadGithubLinkHandler;
+
+lazy_static! {
+    static ref COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = {
+        let mut m = HashMap::new();
+        m.insert("c", "// {}");          
+        m.insert("cpp", "// {}");        
+        m.insert("cs", "// {}");         
+        m.insert("java", "// {}");       
+        m.insert("js", "// {}");         
+        m.insert("go", "// {}");         
+        m.insert("kt", "// {}");         
+        m.insert("swift", "// {}");      
+        m.insert("rs", "// {}");         
+        m.insert("scala", "// {}");      
+        m.insert("py", "# {}");          
+        m.insert("sh", "# {}");          
+        m.insert("pl", "# {}");          
+        m.insert("rb", "# {}");          
+        m.insert("r", "# {}");           
+        m.insert("ps1", "# {}");         
+        m.insert("php", "// {}");        
+        m.insert("sql", "-- {}");        
+        m.insert("html", "<!-- {} -->"); 
+        m.insert("xml", "<!-- {} -->");  
+        m.insert("css", "/* {} */");     
+        m.insert("lisp", "; {}");        
+        m.insert("scm", "; {}");         
+        m.insert("hs", "-- {}");         
+        m.insert("m", "% {}");           
+        m.insert("asm", "; {}");         
+        m.insert("pro", "% {}");         
+        m.insert("vim", "\" {}");        
+        m.insert("ini", "; {}");         
+        m.insert("jl", "# {}");          
+        m.insert("erl", "% {}");         
+        m.insert("ex", "# {}");          
+        m.insert("lua", "-- {}");        
+        m.insert("tcl", "# {}");         
+        m.insert("yml", "# {}");         
+        m.insert("md", "[comment]: # ({})");
+        m.insert("lhs", "-- {}");        
+        m
+    };
+}
 
 pub enum RangeOrIndex {
     Language(String),
@@ -53,6 +100,20 @@ pub fn parse_url(url: &str) -> Option<RangeOrIndex> {
     }
 }
 
+fn trim_message(lang: String, content: String) -> String {
+    if content.len() > MESSAGE_CODE_LIMIT {
+        content[0..MESSAGE_CODE_LIMIT - 200].to_string()
+            + &*format!(
+                "\n{}",
+                COMMENT_TEMPLATES
+                    .get(&*lang)
+                    .unwrap_or(&"// {}")
+                    .replace("{}", "El mensaje fue cortado por limite de caracteres.")
+            )
+    } else {
+        content
+    }
+}
 
 async fn read_message(link: String) -> Option<String> {
     if let Ok(result) = get(&link).await {
@@ -65,15 +126,18 @@ async fn read_message(link: String) -> Option<String> {
                 return match parsed {
                     RangeOrIndex::Language(language)
                     => Some(format!(
-                        "Mostrando <{link}>\n```{language}\n{text}\n```"
+                        "Mostrando <{link}>\n```{}\n{}\n```",
+                        language.to_owned(),
+                        trim_message(language, text)
                     )),
                     RangeOrIndex::Index(language, index)
                     => {
                         if index < subtext.len() as i32 {
                             Some(format!(
-                                "Mostrando linea {} de <{link}>\n```{language}\n{}\n```",
+                                "Mostrando linea {} de <{link}>\n```{}\n{}\n```",
                                 index + 1,
-                                subtext[index as usize].to_string())
+                                language.to_owned(),
+                                trim_message(language, subtext[index as usize].to_string()))
                             )
                         } else {
                             None
@@ -81,11 +145,12 @@ async fn read_message(link: String) -> Option<String> {
                     }
                     RangeOrIndex::Range(language, start, end)
                     => {
-                        if start  < subtext.len() as i32 && end <= subtext.len() as i32 {
+                        if start < subtext.len() as i32 && end <= subtext.len() as i32 {
                             Some(format!(
-                                "Mostrando desde la linea {} hasta la linea {end} de <{link}>\n```{language}\n{}\n```",
+                                "Mostrando desde la linea {} hasta la linea {end} de <{link}>\n```{}\n{}\n```",
                                 start + 1,
-                                subtext[start as usize..end as usize].join("\n")
+                                language.to_owned(),
+                                trim_message(language, subtext[start as usize..end as usize].join("\n"))
                             ))
                         } else {
                             None
@@ -135,7 +200,16 @@ impl EventHandler for ReadGithubLinkHandler {
             }
 
             if let Some(content) = read_message(link.to_string()).await {
-                msg.reply(&ctx, content).await.unwrap();
+                if let Some(reference) = &msg.message_reference {
+                    msg.channel_id.send_message(
+                        &ctx,
+                        CreateMessage::new()
+                            .content(content)
+                            .reference_message(reference.clone())
+                    ).await.unwrap();
+                } else {
+                    msg.reply(&ctx, content).await.unwrap();
+                }
             }
 
             dup.push(link);
