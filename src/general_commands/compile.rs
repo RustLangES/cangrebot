@@ -11,21 +11,13 @@ use tokio::time::sleep;
 use tracing::error;
 
 static LANGUAGE_ALIASES: &[(&str, &str)] = &[
-    ("c", "c"),
-    ("cpp", "cpp"),
     ("objc", "objective-c"),
-    ("java", "java"),
     ("kt", "kotlin"),
     ("cs", "csharp"),
-    ("go", "go"),
-    ("haskell", "haskell"),
-    ("erlang", "erlang"),
     ("py", "python"),
     ("py3", "python3"),
-    ("r", "r"),
     ("js", "javascript"),
     ("coffee", "coffeescript"),
-    ("vb", "vb"),
     ("fs", "fsharp"),
     ("rs", "rust"),
     ("lisp", "commonlisp"),
