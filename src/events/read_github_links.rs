@@ -16,7 +16,7 @@ pub fn parse_url(url: &str) -> Option<RangeOrIndex> {
     let extension_regex = Regex::new(r"\.([^./?#]+)(#|$)").unwrap();
 
     let range_regex
-        = Regex::new(r"(?:\.(?<language>[^#]+))?#L(?<start>\d+)?(?:-L(?<end>\d+))?$")
+        = Regex::new(r"(?:\.(?<language>[^#]+))?(?:#L(?<start>\d+)?(?:-L(?<end>\d+))?)?$")
         .unwrap();
 
     let language = extension_regex
