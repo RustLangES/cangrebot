@@ -358,7 +358,6 @@ dependencies = [
  "axum 0.7.5",
  "color-eyre",
  "gen_welcome",
- "lazy_static",
  "once_cell",
  "parking_lot",
  "regex",
