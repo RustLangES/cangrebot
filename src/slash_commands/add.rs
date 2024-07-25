@@ -1,6 +1,7 @@
 use serenity::all::{
-    CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
-    CreateInteractionResponse, CreateInteractionResponseMessage, EditInteractionResponse,
+    CommandDataOption, CommandDataOptionValue, CommandInteraction, CommandOptionType, Context,
+    CreateCommand, CreateCommandOption, CreateInteractionResponse,
+    CreateInteractionResponseMessage, EditInteractionResponse,
 };
 
 use songbird::input::{Compose, YoutubeDl};
@@ -8,14 +9,14 @@ use songbird::input::{Compose, YoutubeDl};
 use reqwest::Client as HttpClient;
 use songbird::tracks::Track;
 use songbird::Event;
-use tracing::warn;
+use tracing::{info, warn};
 
 use crate::music::events::MusicEventEndHandler;
 use crate::music::models::MusicPlaylistItem;
 use crate::music::{self, MusicStore};
 
 pub fn register() -> CreateCommand {
-    CreateCommand::new("play")
+    CreateCommand::new("add")
         .description("Reproduce musica en un canal de voz. Puedes escribir una busqueda o una url")
         .add_option(
             CreateCommandOption::new(
@@ -26,12 +27,31 @@ pub fn register() -> CreateCommand {
             .kind(CommandOptionType::String)
             .required(true),
         )
+        .add_option(
+            CreateCommandOption::new(
+                CommandOptionType::String,
+                "primero",
+                "La cancion sera añadida el principio de la cola",
+            )
+            .kind(CommandOptionType::Boolean)
+            .required(false),
+        )
 }
 
 pub async fn run(http_client: &HttpClient, ctx: &Context, cmd: &CommandInteraction) -> String {
     let Some(url) = cmd.data.options.iter().find(|opt| opt.name == "url_search") else {
         return String::from("Falta la URL o busqueda");
     };
+
+    let first = cmd
+        .data
+        .options
+        .iter()
+        .find(|opt| opt.name == "primero")
+        .map(|opt| &opt.value)
+        .map(CommandDataOptionValue::as_bool)
+        .flatten()
+        .unwrap_or(false);
 
     if let Err(err) = music::join(ctx, cmd).await {
         return err;
@@ -82,16 +102,33 @@ pub async fn run(http_client: &HttpClient, ctx: &Context, cmd: &CommandInteracti
             .clone()
             .unwrap_or(String::from("[object Object]"));
 
-        let playlist_item = MusicPlaylistItem::from_metadata(metadata, src.into(), url);
+        let data = ctx.data.write().await;
+        let store = data.get::<MusicStore>().unwrap();
+        let mut store = store.lock().await;
 
-        MusicStore::play_item(
-            ctx.data.read().await.get::<MusicStore>().unwrap().clone(),
-            handler_lock,
-            playlist_item,
-        );
+        let playlist_item =
+            music::models::MusicPlaylistItem::from_metadata(metadata, src.into(), url);
+
+        if store.queue.is_empty() && store.playing.is_none() {
+            info!(" Reproduciendo: {}", song_name);
+
+            store.play_item(
+                handler_lock.clone(),
+                ctx.data.read().await.get::<MusicStore>().unwrap().clone(),
+                playlist_item,
+            );
+        } else {
+            if first {
+                store.queue.push_front(playlist_item);
+            } else {
+                store.queue.push_back(playlist_item);
+            }
+
+            info!(" Cola: {}", store.queue.len());
+        }
 
         let builder =
-            EditInteractionResponse::new().content(format!("Reproduciendo \"{song_name}\""));
+            EditInteractionResponse::new().content(format!("\"{song_name}\" puesta en cola"));
 
         if let Err(why) = cmd.edit_response(&ctx.http, builder).await {
             warn!("Cannot respond to slash command: {}", why);

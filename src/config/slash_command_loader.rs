@@ -1,13 +1,16 @@
 use std::sync::Arc;
 
 use crate::{events::join::guild_member_addition, slash_commands};
-use serenity::all::Message;
 use serenity::{
-    all::{CreateInteractionResponse, CreateInteractionResponseMessage},
+    all::{
+        CommandOptionType, CreateCommand, CreateCommandOption, CreateInteractionResponse,
+        CreateInteractionResponseMessage, Message,
+    },
     async_trait,
     model::prelude::{GuildId, Interaction, Member, Ready},
     prelude::{Context, EventHandler},
 };
+use tracing::warn;
 use tracing::{error, log::info};
 
 use crate::events::anti_spam::{extract_link, spam_checker};
@@ -64,9 +67,7 @@ impl EventHandler for Handler {
                     "explica" => explica::run(&command.data.options),
                     "invite" => invite::run(&command.data.options),
                     "id" => id::run(&command.data.options()),
-                    "join" => join::run(&ctx, &command).await,
                     "ping" => ping::run(),
-                    "play" => play::run(&self.client, &ctx, &command).await,
                     "sugerencia" => {
                         sugerencia::run(
                             &ctx,
@@ -76,6 +77,9 @@ impl EventHandler for Handler {
                         )
                         .await
                     }
+
+                    "add" => add::run(&self.client, &ctx, &command).await,
+                    "play" => play::run(&self.client, &ctx, &command).await,
                     _ => "Este comando no esa implementado, pero puedes hacer una sugerencia `/sugerencia`".to_string(),
                 }
             };
@@ -83,7 +87,7 @@ impl EventHandler for Handler {
             let data = CreateInteractionResponseMessage::new().content(content);
             let builder = CreateInteractionResponse::Message(data);
             if let Err(why) = command.create_response(&ctx.http, builder).await {
-                info!("Cannot respond to slash command: {}", why);
+                warn!("Cannot respond to slash command: {}", why);
             }
         }
     }
@@ -102,10 +106,10 @@ impl EventHandler for Handler {
                     explica::register(),
                     id::register(),
                     invite::register(),
-                    join::register(),
                     ping::register(),
-                    play::register(),
                     sugerencia::register(),
+                    add::register(),
+                    play::register(),
                 ],
             )
             .await

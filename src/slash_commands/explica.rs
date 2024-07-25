@@ -36,15 +36,14 @@ pub fn register() -> CreateCommand {
             .add_string_choice("return", "return")
             .add_string_choice("scopes", "scopes")
             .add_string_choice("shadowing", "shadowing")
-            .add_string_choice("slices", "slices")
-            // .add_string_choice("string", "string")
-            // .add_string_choice("struct", "struct")
-            // .add_string_choice("tipo_de_datos", "tipo_de_datos")
-            // .add_string_choice("traits", "traits")
-            // .add_string_choice("tuplas", "tuplas")
-            // .add_string_choice("variables", "variables")
-            // .add_string_choice("vectores", "vectores")
-            // .add_string_choice("while", "while"),
+            .add_string_choice("slices", "slices"), // .add_string_choice("string", "string")
+                                                    // .add_string_choice("struct", "struct")
+                                                    // .add_string_choice("tipo_de_datos", "tipo_de_datos")
+                                                    // .add_string_choice("traits", "traits")
+                                                    // .add_string_choice("tuplas", "tuplas")
+                                                    // .add_string_choice("variables", "variables")
+                                                    // .add_string_choice("vectores", "vectores")
+                                                    // .add_string_choice("while", "while"),
         )
 }
 

@@ -1,8 +1,10 @@
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 
 use anyhow::anyhow;
+use lavalink_rs::client::LavalinkClient;
+use lavalink_rs::model::client::NodeDistributionStrategy;
+use lavalink_rs::node::NodeBuilder;
 use serenity::framework::standard::Configuration;
 use serenity::framework::{standard::macros::hook, StandardFramework};
 use serenity::model::channel::Message;
@@ -11,7 +13,7 @@ use shuttle_runtime::SecretStore;
 use songbird::SerenityInit;
 use tracing::{info, instrument};
 
-use crate::config::songbird_config::SoundStore;
+use crate::music::{self, MusicStore};
 
 use super::general_command_loader::GENERAL_GROUP;
 
@@ -36,12 +38,10 @@ pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyh
 
     framework.configure(Configuration::new().prefix(prefix));
 
-    info!("Starting bot with token: {}", token);
+    info!("Starting bot");
 
     // Set gateway intents, which decides what events the bot will be notified about
     let intents = GatewayIntents::all();
-
-    info!("{:?}", secret_store.get("GUILD_ID"));
 
     let Some(guild_id) = secret_store.get("GUILD_ID") else {
         return Err(anyhow!("'GUILD_ID' was not found"));
@@ -55,20 +55,33 @@ pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyh
         .register_songbird()
         .await
         .expect("Error creating client");
-    // Obtain a lock to the data owned by the client, and insert the client's
-    // voice manager into it. This allows the voice manager to be accessible by
-    // event handlers and framework commands.
+
     {
+        let bot_id = client.cache.current_user().id.into();
+
         let mut data = client.data.write().await;
 
-        // Loading the audio ahead of time.
-        let audio_map = HashMap::new();
+        data.insert::<MusicStore>(Arc::new(Mutex::new(MusicStore::new())));
 
-        // load_sound_file(&mut audio_map, &public_folder, "loop", "loop.mp3").await;
-        // load_sound_file(&mut audio_map, &public_folder, "ting", "ting.mp3").await;
-        // load_sound_file(&mut audio_map, &public_folder, "song", "Cloudkicker_-_Loops_-_22_2011_07.mp3").await;
+        let events = music::events::get_music_events();
 
-        data.insert::<SoundStore>(Arc::new(Mutex::new(audio_map)));
+        let node_local = NodeBuilder {
+            hostname: "lavalink.rustlang-es.org:2333".to_string(),
+            is_ssl: false,
+            events: lavalink_rs::model::events::Events::default(),
+            password: secret_store.get("LAVALINK_PASSWORD").unwrap(),
+            user_id: bot_id,
+            session_id: None,
+        };
+
+        let client = LavalinkClient::new(
+            events,
+            vec![node_local],
+            NodeDistributionStrategy::round_robin(),
+        )
+        .await;
+
+        data
     }
 
     Ok(client)
