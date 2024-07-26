@@ -1,11 +1,5 @@
-mod error;
-pub use error::MusicEventErrorHandler;
-
-mod end;
-pub use end::MusicEventEndHandler;
-
 use lavalink_rs::{hook, model::events, prelude::*};
-use serenity::all::{ChannelId, Context};
+use serenity::all::{ChannelId, Context, Http};
 use tracing::info;
 
 pub fn get_music_events() -> events::Events {
@@ -34,7 +28,7 @@ pub async fn ready_event(client: LavalinkClient, session_id: String, event: &eve
 pub async fn track_start(client: LavalinkClient, _session_id: String, event: &events::TrackStart) {
     let player_context = client.get_player_context(event.guild_id).unwrap();
     let data = player_context
-        .data::<(ChannelId, std::sync::Arc<Context>)>()
+        .data::<(ChannelId, std::sync::Arc<Http>)>()
         .unwrap();
     let (channel_id, http) = (&data.0, &data.1);
 

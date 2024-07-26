@@ -61,12 +61,10 @@ pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyh
 
         let mut data = client.data.write().await;
 
-        data.insert::<MusicStore>(Arc::new(Mutex::new(MusicStore::new())));
-
         let events = music::events::get_music_events();
 
         let node_local = NodeBuilder {
-            hostname: "lavalink.rustlang-es.org:2333".to_string(),
+            hostname: secret_store.get("LAVALINK_HOST").unwrap(),
             is_ssl: false,
             events: lavalink_rs::model::events::Events::default(),
             password: secret_store.get("LAVALINK_PASSWORD").unwrap(),
@@ -81,7 +79,7 @@ pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyh
         )
         .await;
 
-        data
+        data.insert::<MusicStore>(Arc::new(Mutex::new(client)));
     }
 
     Ok(client)

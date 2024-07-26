@@ -49,6 +49,8 @@ regex = "1.10.2"
 once_cell = "1.18.0"
 
 gen_welcome = { version = "0.1.0", path = "crates/gen_welcome" }
+lavalink-rs = { version = "0.12.0", features = ["songbird", "serenity", "native-tls", "macros"], default-features = false }
+futures = "0.3.30"
 
 [dependencies.parking_lot]
 version = "0.12"

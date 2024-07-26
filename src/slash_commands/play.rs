@@ -1,17 +1,14 @@
+use lavalink_rs::model::search::SearchEngines;
+use lavalink_rs::model::track::TrackLoadData;
+use lavalink_rs::player_context::TrackInQueue;
 use serenity::all::{
     CommandInteraction, CommandOptionType, Context, CreateCommand, CreateCommandOption,
     CreateInteractionResponse, CreateInteractionResponseMessage, EditInteractionResponse,
 };
 
-use songbird::input::{Compose, YoutubeDl};
-
 use reqwest::Client as HttpClient;
-use songbird::tracks::Track;
-use songbird::Event;
-use tracing::warn;
+use tracing::{error, warn};
 
-use crate::music::events::MusicEventEndHandler;
-use crate::music::models::MusicPlaylistItem;
 use crate::music::{self, MusicStore};
 
 pub fn register() -> CreateCommand {
@@ -43,62 +40,82 @@ pub async fn run(http_client: &HttpClient, ctx: &Context, cmd: &CommandInteracti
 
     let guild_id = cmd.guild_id.unwrap();
 
-    let manager = songbird::get(ctx)
-        .await
-        .expect("Songbird Voice client placed in at initialisation.")
-        .clone();
-
-    if let Some(handler_lock) = manager.get(guild_id) {
-        let mut src = if is_search {
-            YoutubeDl::new_search(http_client.clone(), url.clone())
-        } else {
-            YoutubeDl::new(http_client.clone(), url.clone())
-        };
-
-        let data = CreateInteractionResponseMessage::new().content("Procesando cancion");
-        let builder = CreateInteractionResponse::Defer(data);
-        if let Err(why) = cmd.create_response(&ctx.http, builder).await {
-            warn!("Cannot respond to slash command: {}", why);
-        }
-
-        let metadata = src.aux_metadata().await;
-
-        let metadata = match metadata {
-            Ok(m) => m,
-            Err(err) => {
-                let builder = EditInteractionResponse::new()
-                    .content(format!("No se pudo obtener la cancion: {err}"));
-
-                if let Err(why) = cmd.edit_response(&ctx.http, builder).await {
-                    warn!("Cannot respond to slash command: {}", why);
-                }
-
-                return String::new();
-            }
-        };
-
-        let song_name = metadata
-            .title
-            .clone()
-            .unwrap_or(String::from("[object Object]"));
-
-        let playlist_item = MusicPlaylistItem::from_metadata(metadata, src.into(), url);
-
-        MusicStore::play_item(
-            ctx.data.read().await.get::<MusicStore>().unwrap().clone(),
-            handler_lock,
-            playlist_item,
-        );
-
+    let data = ctx.data.read().await;
+    let client = data.get::<MusicStore>().unwrap().lock().await;
+    let Some(player) = client.get_player_context(cmd.guild_id.unwrap()) else {
         let builder =
-            EditInteractionResponse::new().content(format!("Reproduciendo \"{song_name}\""));
+            EditInteractionResponse::new().content("El bot no se encuentra en un canal de voz");
 
         if let Err(why) = cmd.edit_response(&ctx.http, builder).await {
             warn!("Cannot respond to slash command: {}", why);
         }
 
-        String::new()
-    } else {
-        String::from("El bot no se encuentra en un canal de voz")
+        return String::new();
+    };
+
+    let data = CreateInteractionResponseMessage::new().content("Procesando cancion");
+    let builder = CreateInteractionResponse::Defer(data);
+    if let Err(why) = cmd.create_response(&ctx.http, builder).await {
+        warn!("Cannot respond to slash command: {}", why);
     }
+
+    let Ok(track) = client
+        .load_tracks(cmd.guild_id.unwrap(), &url)
+        .await
+        .inspect_err(|err| error!("Error fetching tracks: {err}"))
+    else {
+        let builder = EditInteractionResponse::new().content(format!(
+            "Me arreglas? :sob: <https://github.com/RustLangES/cangrebot>"
+        ));
+
+        if let Err(why) = cmd.edit_response(&ctx.http, builder).await {
+            warn!("Cannot respond to slash command: {}", why);
+        }
+        return String::new();
+    };
+
+    let mut tracks: Vec<TrackInQueue> = match track.data {
+        Some(TrackLoadData::Track(x)) => vec![x.into()],
+        Some(TrackLoadData::Search(x)) => vec![x[0].clone().into()],
+        Some(TrackLoadData::Playlist(x)) => {
+            // playlist_info = Some(x.info);
+            x.tracks.iter().map(|x| x.clone().into()).collect()
+        }
+
+        _ => {
+            let builder = EditInteractionResponse::new().content(format!(
+                "Me arreglas? :sob: {track:#?}\n<https://github.com/RustLangES/cangrebot>"
+            ));
+
+            if let Err(why) = cmd.edit_response(&ctx.http, builder).await {
+                warn!("Cannot respond to slash command: {}", why);
+            }
+            return String::new();
+        }
+    };
+
+    let queue = player.get_queue();
+    _ = queue
+        .append(tracks.into())
+        .inspect_err(|err| error!("Append: {err}"));
+    let queue_len = queue
+        .get_count()
+        .await
+        .inspect_err(|err| error!("Queue count: {err}"))
+        .unwrap_or(0);
+
+    let builder = EditInteractionResponse::new()
+        .content(format!("Canciones puestas en cola: {:#?}", queue_len));
+
+    if let Err(why) = cmd.edit_response(&ctx.http, builder).await {
+        warn!("Cannot respond to slash command: {}", why);
+    }
+
+    if let Ok(player_data) = player.get_player().await {
+        if player_data.track.is_none() && queue.get_track(0).await.is_ok_and(|x| x.is_some()) {
+            _ = player.skip().inspect_err(|err| error!("Skip: {err}"));
+        }
+    }
+
+    String::new()
 }
