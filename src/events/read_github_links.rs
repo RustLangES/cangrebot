@@ -166,7 +166,7 @@ async fn read_message(link: String) -> Option<String> {
 #[async_trait]
 impl EventHandler for ReadGithubLinkHandler {
     async fn message(&self, ctx: Context, msg: Message) {
-        if msg.author.bot {
+        if msg.author.bot || msg.content.starts_with("noembed") {
             return;
         }
 
