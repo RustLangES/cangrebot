@@ -166,6 +166,10 @@ async fn read_message(link: String) -> Option<String> {
 #[async_trait]
 impl EventHandler for ReadGithubLinkHandler {
     async fn message(&self, ctx: Context, msg: Message) {
+        if msg.author.bot {
+            return;
+        }
+
         let repo_regex
             = Regex::new(r"(https://github\.com/(?:[^/]+/){2})blob/(.*)")
             .unwrap();
