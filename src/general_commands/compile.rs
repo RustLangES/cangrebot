@@ -172,6 +172,9 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
             "{INVALID_LANGUAGE} {}",
             LANGUAGES.join(", ")
         )).await?;
+        if !code_block.contains("fn main") {
+            code_block = format!("fn main() {\n{code_block}\n}");
+        }
         return Ok(());
     }
 
