@@ -27,6 +27,43 @@ static LANGUAGE_ALIASES: &[(&str, &str)] = &[
     ("bf", "brainfuck")
 ];
 
+static MAIN_TEMPLATES: &[(&str, &str)] = &[
+    ("csharp", "public class Program { public static void Main(string[] args) { {code} } }"),
+    ("java", "public class Main { public static void main(String[] args) { {code} } }"),
+    ("kotlin", "fun main() { {code} }"),
+    ("rust", "fn main() { {code} }"),
+    ("go", "func main() { {code} }"),
+    ("swift", "func main() { {code} }"),
+    ("c", "int main(int argc, char *argv[]) { {code} }"),
+    ("cpp", "int main(int argc, char *argv[]) { {code} }"),
+    ("objective-c", "int main(int argc, const char * argv[]) { @autoreleasepool { {code} } return 0; }"),
+    ("scala", "object Main extends App { {code} }"),
+    ("haskell", "main = do {code}"),
+    ("erlang", "-module(main). -export([main/0]). main() -> {code}."),
+    ("vb", "Module Program Sub Main() { {code} } End Sub End Module"),
+    ("cobol", "IDENTIFICATION DIVISION. PROGRAM-ID. CANGREBOT. PROCEDURE DIVISION. {code} STOP RUN."),
+    ("d", "void main() { {code} }"),
+    ("php", "<?php {code} ?>"),
+];
+
+static MAIN_REGEX_TEMPLATES: &[(&str, &str)] = &[
+    ("csharp", r"\bclass\s+\w+\s*\{[^}]*\b(?:public|private|protected|internal)?\s*(?:static\s+)?(?:void|int|Task)\s+Main\s*\(\s*(?:string\s*\[\s*\]\s*args\s*)?\)\s*[^}]*\}"),
+    ("java", r"\bclass\s+\w+\s*\{[^}]*\b(?:public|protected|private)?\s*(?:static\s+)?(?:void|int)\s+main\s*\(\s*String\s*\[\s*\]\s*args\s*\)\s*[^}]*\}"),
+    ("kotlin", r"\bfun\s+main\s*\(\s*\)\s*"),
+    ("rust", r"\bfn\s+main\s*\(\s*\)\s*"),
+    ("go", r"\bfunc\s+main\s*\(\s*\)\s*"),
+    ("swift", r"\bfunc\s+main\s*\(\s*\)\s*"),
+    ("c", r"\bint\s+main\s*\(\s*(int\s+\w+\s*,\s*char\s*\*\s*\w+\[\]\s*)?\s*\)\s*"),
+    ("cpp", r"\bint\s+main\s*\(\s*(int\s+\w+\s*,\s*char\s*\*\s*\w+\[\]\s*)?\s*\)\s*"),
+    ("objective-c", r"\bint\s+main\s*\(\s*(int\s+\w+\s*,\s*const\s+char\s*\*\s*\w+\[\]\s*)?\s*\)\s*"),
+    ("scala", r"\bobject\s+Main\s+extends\s+App\b"),
+    ("haskell", r"\bmain\s*=\s*do\b"),
+    ("erlang", r"\bmain\s*\(\)\s*->\b"),
+    ("php", r"<\?php\b"),
+    ("vb", r"\bSub\s+Main\s*\(\s*\)\s*"),
+    ("cobol", r"IDENTIFICATION DIVISION\.\s*PROGRAM-ID\s+[^\n]+\.\s*PROCEDURE DIVISION\."),
+    ("d", r"\bvoid\s+main\s*\(\s*\)\b"),
+];
 
 static LANGUAGES: &[&str] = &["c", "cpp", "objective-c", "java", "kotlin", "scala",
     "swift", "csharp", "go", "haskell", "erlang", "perl", "python", "python3",
@@ -167,9 +204,6 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
 
     if language == "rust" {
         msg.react(ctx, ReactionType::Unicode("🦀".to_string())).await.unwrap();
-        if !code_block.contains("fn main") {
-            code_block = format!("fn main() {{\n{}\n}}", code_block);
-        }
     }
 
     if !LANGUAGES.contains(&&*language) {
@@ -178,6 +212,28 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
             LANGUAGES.join(", ")
         )).await?;
         return Ok(());
+    }
+
+    if !msg.content.contains("--no-main") {
+        let template = MAIN_TEMPLATES
+            .iter()
+            .find(|&&(lang, _)| lang == language)
+            .map(|&(_, tmpl)| tmpl)
+            .unwrap_or(&"{code}");
+
+        let regex_str = MAIN_REGEX_TEMPLATES
+            .iter()
+            .find(|&&(lang, _)| lang == language)
+            .map(|&(_, tmpl)| tmpl)
+            .unwrap_or(r".*");
+
+        if !Regex::new(regex_str).unwrap().is_match(&code_block) {
+            code_block = template.replace("{code}", &code_block);
+        }
+    }
+
+    if msg.content.contains("--escape") {
+        code_block = code_block.replace(r"\`", "`");
     }
 
     let args = args_and_code[end_code.unwrap() + 3..]
@@ -201,6 +257,8 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
 
         let mut response_embed = CreateEmbed::default();
 
+        let mut succeded = false;
+
         if let Some(build_details) = check_details(response.id).await {
             if build_details.build_result.unwrap_or("success".to_string()) != "success" {
                 response_embed = response_embed
@@ -209,7 +267,7 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
                         "```\n{}\n```",
                         build_details.build_stderr.unwrap_or(
                             "<no se proporciono ningún error de build.>".to_string()
-                        )
+                        ).replace("```", r"`‎`‎`")
                     ))
                     .color(0xFF0000)
                     .footer(CreateEmbedFooter::new(format!(
@@ -223,7 +281,7 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
                         "```\n{}\n```",
                         build_details.stderr.unwrap_or(
                             "<no se proporciono ningún error de ejecución>".to_string()
-                        )
+                        ).replace("```", r"`‎`‎`")
                     ))
                     .color(0xFF0000)
                     .footer(CreateEmbedFooter::new(format!(
@@ -237,13 +295,15 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
                         "```\n{}\n```",
                         build_details.stdout.unwrap_or(
                             "<el código no escribió en la consola.>".to_string()
-                        )
+                        ).replace("```", r"`‎`‎`")
                     ))
                     .color(0x00FF00)
                     .footer(CreateEmbedFooter::new(format!(
                         "El programa salio con el código: {}",
                         build_details.exit_code.unwrap_or_default()
-                    )))
+                    )));
+
+                succeded = true;
             }
 
             msg.channel_id
@@ -252,6 +312,10 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
                     CreateMessage::new().embed(response_embed).reference_message(msg)
                 )
                 .await?;
+
+            if !succeded {
+                msg.react(ctx, ReactionType::Unicode("❌".to_string())).await.unwrap();
+            }
         } else {
             msg.reply(ctx, INVALID_RESPONSE).await?;
         }
