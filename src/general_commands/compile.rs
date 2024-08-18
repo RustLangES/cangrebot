@@ -8,7 +8,7 @@ use serenity::all::standard::macros::command;
 use serenity::builder::{CreateEmbed, CreateEmbedFooter};
 use urlencoding::encode;
 use tokio::time::sleep;
-use tracing::{debug, error, info};
+use tracing::error;
 
 static LANGUAGE_ALIASES: &[(&str, &str)] = &[
     ("objc", "objective-c"),
@@ -59,7 +59,7 @@ static MAIN_REGEX_TEMPLATES: &[(&str, &str)] = &[
     ("scala", r"\bobject\s+Main\s+extends\s+App\b"),
     ("haskell", r"\bmain\s*=\s*do\b"),
     ("erlang", r"\bmain\s*\(\)\s*->\b"),
-    ("php", r"<?php\b"),
+    ("php", r"<\?php\b"),
     ("vb", r"\bSub\s+Main\s*\(\s*\)\s*"),
     ("cobol", r"IDENTIFICATION DIVISION\.\s*PROGRAM-ID\s+[^\n]+\.\s*PROCEDURE DIVISION\."),
     ("d", r"\bvoid\s+main\s*\(\s*\)\b"),
@@ -232,6 +232,10 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
         }
     }
 
+    if msg.content.contains("--escape") {
+        code_block = code_block.replace(r"\`", "`");
+    }
+
     let args = args_and_code[end_code.unwrap() + 3..]
         .to_string()
         .replace("\n", " ");
@@ -263,7 +267,7 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
                         "```\n{}\n```",
                         build_details.build_stderr.unwrap_or(
                             "<no se proporciono ningún error de build.>".to_string()
-                        )
+                        ).replace("```", r"`‎`‎`")
                     ))
                     .color(0xFF0000)
                     .footer(CreateEmbedFooter::new(format!(
@@ -277,7 +281,7 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
                         "```\n{}\n```",
                         build_details.stderr.unwrap_or(
                             "<no se proporciono ningún error de ejecución>".to_string()
-                        )
+                        ).replace("```", r"`‎`‎`")
                     ))
                     .color(0xFF0000)
                     .footer(CreateEmbedFooter::new(format!(
@@ -291,7 +295,7 @@ pub async fn compile(ctx: &Context, msg: &Message) -> CommandResult {
                         "```\n{}\n```",
                         build_details.stdout.unwrap_or(
                             "<el código no escribió en la consola.>".to_string()
-                        )
+                        ).replace("```", r"`‎`‎`")
                     ))
                     .color(0x00FF00)
                     .footer(CreateEmbedFooter::new(format!(
