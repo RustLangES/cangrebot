@@ -12,6 +12,7 @@ use songbird::SerenityInit;
 use tracing::{info, instrument};
 
 use crate::config::songbird_config::SoundStore;
+use crate::events::new_members_mention::NewMembersMention;
 
 use super::general_command_loader::GENERAL_GROUP;
 
@@ -54,6 +55,7 @@ pub async fn setup(secret_store: SecretStore, _: PathBuf) -> Result<Client, anyh
     let client = Client::builder(token, intents)
         .event_handler(handler)
         .event_handler(ReadGithubLinkHandler)
+        .event_handler(NewMembersMention)
         .framework(framework)
         .register_songbird()
         .await
