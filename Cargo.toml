@@ -51,6 +51,8 @@ gen_welcome = { version = "0.1.0", path = "crates/gen_welcome" }
 urlencoding = "2.1.3"
 lazy_static = "1.4.0"
 time = "0.3.36"
+tokio_schedule = "0.3.2"
+chrono = "0.4.38"
 
 [dependencies.parking_lot]
 version = "0.12"

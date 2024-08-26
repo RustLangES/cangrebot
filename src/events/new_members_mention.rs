@@ -1,6 +1,6 @@
-use serenity::all::{ChannelId, Context, CreateMessage, EventHandler, Message, RoleId};
+use serenity::all::{ChannelId, Context, EventHandler, Message, RoleId};
 use serenity::async_trait;
-use std::collections::HashMap;
+use tokio_schedule::Job;
 
 pub struct NewMembersMention;
 
@@ -18,49 +18,45 @@ async fn log(ctx: &Context, msg: impl serde::Serialize) {
 #[async_trait]
 impl EventHandler for NewMembersMention {
     async fn message(&self, ctx: Context, msg: Message) {
-        if !msg.content.starts_with("!new members") {
+        if !(msg.mention_roles.contains(&NEW_MEMBERS_ROLE_ID) && msg.channel_id == WELCOME_CHANNEL)
+        {
+            tracing::info!("No hubo mencion");
             return;
         }
-        // if !(msg.mention_roles.contains(&NEW_MEMBERS_ROLE_ID) && msg.channel_id == WELCOME_CHANNEL)
-        // {
-        //     return;
-        // }
-
-        // let Some(guild) = msg.guild(ctx.cache.as_ref()) else {
-        // ctx.http
-        //     .send_message(
-        //         INTERNAL_LOGS,
-        //         Vec::new(),
-        //         &format!("Cannot get GUILD from message: {}", msg.clone().link()),
-        //     )
-        //     .await
-        //     .unwrap();
-        // return;
-        // };
-
-        let mut message = "Resultado de reseteo de roles para los nuevos:\n\n".to_owned();
 
         let members = msg
             .guild(ctx.cache.as_ref())
             .unwrap()
             .members
             .iter()
-            .filter(|(_, v)| v.roles.contains(&NEW_MEMBERS_ROLE_ID))
-            .for_each(|(_, v)| message.push_str(&format!("- {}\n", v.display_name())));
+            .filter_map(|(_, v)| v.roles.contains(&NEW_MEMBERS_ROLE_ID).then(|| v.clone()))
+            .collect::<Vec<_>>();
 
-        // for (_, v) in members.iter() {
-        // let emoji = if v.remove_role(&ctx, NEW_MEMBERS_ROLE_ID).await.is_ok() {
-        //     ":white_check_mark:"
-        // } else {
-        //     ":x:"
-        // };
-        // }
+        tracing::info!("New Members: {}", members.len());
 
-        if !message.is_empty() {
-            INTERNAL_LOGS
-                .send_message(&ctx, CreateMessage::new().content(&message))
-                .await
-                .unwrap();
+        {
+            let members = members.clone();
+            let remove_role = tokio_schedule::every(30)
+                .minute()
+                .until(&(chrono::Utc::now() + chrono::Duration::hours(1)))
+                .in_timezone(&chrono::Utc)
+                .perform(move || {
+                    let ctx = ctx.clone();
+                    let members = members.clone();
+                    async move {
+                        for v in members.iter() {
+                            if let Err(e) = v.remove_role(&ctx, NEW_MEMBERS_ROLE_ID).await {
+                                tracing::error!(
+                                    "Failed to remove role of: {} - {:?}\nReason: {e:?}",
+                                    v.display_name(),
+                                    v.nick
+                                );
+                            }
+                        }
+                    }
+                });
+
+            tokio::spawn(remove_role);
         }
     }
 }
