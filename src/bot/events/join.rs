@@ -1,6 +1,7 @@
 use anyhow::Result;
-use serenity::all::{CreateAttachment, CreateMessage};
-use serenity::{model::prelude::*, prelude::*};
+use poise::serenity_prelude::{
+    ChannelId, Context, CreateAttachment, CreateMessage, GuildId, Member, Mentionable, ReactionType,
+};
 use std::convert::TryFrom;
 
 const DEFAULT_NEWER_ROLE: u64 = 1263861260932485194;
@@ -61,8 +62,8 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
         guild_id
             .to_guild_cached(ctx)
             .map(|g| g.member_count as usize),
-        include_bytes!("../../static/fonts/WorkSans-Bold.ttf"),
-        include_bytes!("../../static/fonts/WorkSans-Regular.ttf"),
+        include_bytes!("../../../static/fonts/WorkSans-Bold.ttf"),
+        include_bytes!("../../../static/fonts/WorkSans-Regular.ttf"),
         &output_path,
     )
     .expect("Cannot generate welcome image");
