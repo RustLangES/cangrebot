@@ -12,48 +12,36 @@ description = "A Discord Bot made with Rust from RustLangEs Community"
 readme = "README.md"
 
 [dependencies]
+gen_welcome = { version = "0.1.0", path = "crates/gen_welcome" }
+
 anyhow = "1.0.66"
-shuttle-runtime = "0.42.0"
-serenity = { version = "=0.12.0", default-features = true, features = [
-    "cache",
-    "framework",
-    "client",
-    "gateway",
-    "rustls_backend",
-    "model",
-    "standard_framework",
-    "voice",
-] }
-#shuttle-secrets = "0.42.0"
-tokio = "1.26.0"
-tracing = "0.1.37"
+axum = "0.7.5"
+chrono = "0.4.38"
 color-eyre = "0.6.2"
-serde = "1.0.188"
-serde_json = "1.0.105"
-songbird = { version = "0.4.1", features = ["serenity"] }
-#shuttle-static-folder = "0.42.0"
+lazy_static = "1.4.0"
+parking_lot = { version = "0.12", features = ["send_guard"] }
+poise = "0.6.1"
 reqwest = { version = "0.11.27", features = ["json"] } # Version used by songbird::input::YoutubeDl
+regex = "1.10.2"
 scraper = { version = "0.19.0", features = [
     "indexmap",
     "deterministic",
     "atomic",
 ] }
+serde = "1.0.188"
+serde_json = "1.0.105"
+songbird = { version = "0.4.1", features = ["serenity"] }
+shuttle-runtime = "0.42.0"
+#shuttle-secrets = "0.42.0"
+#shuttle-static-folder = "0.42.0"
 symphonia = { version = "0.5.3", default-features = false, features = [
     "mp3",
     "ogg",
     "wav",
 ] }
-axum = "0.7.5"
-regex = "1.10.2"
-once_cell = "1.18.0"
-
-gen_welcome = { version = "0.1.0", path = "crates/gen_welcome" }
-urlencoding = "2.1.3"
-lazy_static = "1.4.0"
 time = "0.3.36"
 tokio_schedule = "0.3.2"
-chrono = "0.4.38"
-
-[dependencies.parking_lot]
-version = "0.12"
-features = ["send_guard"]
+tokio = "1.26.0"
+tracing = "0.1.37"
+once_cell = "1.18.0"
+urlencoding = "2.1.3"
