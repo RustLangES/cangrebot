@@ -1,4 +1,5 @@
 mod commands;
+mod events;
 mod util;
 
 use anyhow::anyhow;
@@ -26,6 +27,10 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
         .options(poise::FrameworkOptions {
             commands: commands(),
 
+            event_handler: |ctx, event, framework, data| {
+                Box::pin(events::handle(ctx, event, framework, data))
+            },
+
             pre_command: |ctx| {
                 Box::pin(async move {
                     info!(
@@ -35,6 +40,7 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
                     );
                 })
             },
+
             prefix_options: poise::PrefixFrameworkOptions {
                 prefix: Some(secrets.discord_prefix.clone()),
                 mention_as_prefix: true,
