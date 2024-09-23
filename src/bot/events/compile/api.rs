@@ -25,8 +25,8 @@ pub async fn compile_code(language: String, code: String, args: String) -> Optio
     Client::new()
         .post(format!(
             "https://api.paiza.io/runners/create?source_code={}&language={}&api_key=guest{}",
-            encode(&*code),
-            encode(&*language),
+            encode(&code),
+            encode(&language),
             if args.is_empty() {
                 "".to_string()
             } else {
@@ -46,7 +46,7 @@ pub async fn check_status(runner_id: String) -> Option<RunnerResponse> {
     Client::new()
         .get(format!(
             "https://api.paiza.io/runners/get_status?id={}&api_key=guest",
-            encode(&*runner_id)
+            encode(&runner_id)
         ))
         .send()
         .await
@@ -61,7 +61,7 @@ pub async fn check_details(runner_id: String) -> Option<RunnerDetails> {
     Client::new()
         .get(format!(
             "https://api.paiza.io/runners/get_details?id={}&api_key=guest",
-            encode(&*runner_id)
+            encode(&runner_id)
         ))
         .send()
         .await

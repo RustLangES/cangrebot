@@ -24,7 +24,7 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
         .unwrap()
         .members
         .iter()
-        .filter_map(|(_, v)| v.roles.contains(&NEW_MEMBERS_ROLE_ID).then(|| v.clone()))
+        .filter(|&(_, v)| v.roles.contains(&NEW_MEMBERS_ROLE_ID)).map(|(_, v)| v.clone())
         .collect::<Vec<_>>();
 
     tracing::info!("New Members: {}", members.len());
