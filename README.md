@@ -11,6 +11,7 @@ Para que el bot se ejecute tenemos que crear el archivo `Secret.toml` con sus re
 - `DISCORD_TOKEN` Token del bot
 - `GUILD_ID` Id del Servidor
 - `BOT_APIKEY` Autorizacion para canal cifrado entre el bot y el servidor (Puede contener cualquier texto)
+- `LAVALINK_PASSWORD` Contraseña Lavalink
 
 > Existe el archivo `.env.example` que puedes renombrar
 

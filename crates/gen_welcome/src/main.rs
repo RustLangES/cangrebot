@@ -16,7 +16,7 @@ fn main() {
         panic!("El nombre es necesario")
     };
     let Some(members) = args.next().map(|m| {
-        m.parse::<u64>()
+        m.parse::<usize>()
             .expect("No se pudo parsear la cantidad de miembros")
     }) else {
         panic!("La cantidad de miembros es necesario")
@@ -37,7 +37,7 @@ fn main() {
         &background,
         &avatar,
         &name,
-        members,
+        Some(members),
         include_bytes!("../../../static/fonts/WorkSans-Bold.ttf"),
         include_bytes!("../../../static/fonts/WorkSans-Regular.ttf"),
         &out,
