@@ -71,7 +71,7 @@ pub async fn message(ctx: &Context, new_message: &Message) -> Result<bool, bot::
         .await?;
     let mut message_tracker = MESSAGE_TRACKER.lock().await;
     let time = 604800;
-    let channel_id = new_message.channel_id.clone();
+    let channel_id = new_message.channel_id;
 
     if let Some(last_message) = message_tracker.iter().last() {
         if last_message.author_id == author_id
@@ -143,7 +143,7 @@ async fn delete_spam_messages(
 
         let messages = channel.messages(&ctx.http, GetMessages::new()).await?;
         for message in messages {
-            if message.author.id == author_id && &*message.content == &*message_content {
+            if message.author.id == author_id && &*message.content == message_content {
                 message.delete(&ctx.http).await?;
             }
         }

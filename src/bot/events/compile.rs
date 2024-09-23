@@ -155,7 +155,7 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
 
     let parts: Vec<&str> = Regex::new(r"[ \n]")
         .unwrap()
-        .splitn(&*msg.content, 2)
+        .splitn(&msg.content, 2)
         .collect();
 
     if parts.len() < 2 {
@@ -196,7 +196,7 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
     language = LANGUAGE_ALIASES
         .iter()
         .find_map(|(key, value)| {
-            if key.to_string() == language {
+            if *key == language {
                 Some(value.to_string())
             } else {
                 None
@@ -221,7 +221,7 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
             .iter()
             .find(|&&(lang, _)| lang == language)
             .map(|&(_, tmpl)| tmpl)
-            .unwrap_or(&"{code}");
+            .unwrap_or("{code}");
 
         let regex_str = MAIN_REGEX_TEMPLATES
             .iter()

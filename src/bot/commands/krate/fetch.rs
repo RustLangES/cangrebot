@@ -64,7 +64,7 @@ pub async fn fetch_crate(client: &Client, crate_name: String) -> reqwest::Result
 
     if let Ok(err) = serde_json::from_str::<CratesError>(&res) {
         if let Some(CratesErrorDetail { detail }) = err.errors.first() {
-            return Ok(format!("{detail}"));
+            return Ok(detail.to_string());
         }
     }
 
@@ -83,7 +83,7 @@ pub async fn fetch_crate(client: &Client, crate_name: String) -> reqwest::Result
     }) = serde_json::from_str::<CratesIO>(&res)
         .inspect_err(|e| tracing::error!("Serde Crates.io: {e:?}"))
     else {
-        return Ok(format!("No se pudo deserializar la respuesta"));
+        return Ok("No se pudo deserializar la respuesta".to_string());
     };
 
     let res = MESSAGE
@@ -152,14 +152,14 @@ pub async fn search_crate(
 
     if let Ok(err) = serde_json::from_str::<CratesError>(&res) {
         if let Some(CratesErrorDetail { detail }) = err.errors.first() {
-            return Ok(Err(format!("{detail}")));
+            return Ok(Err(detail.to_string()));
         }
     }
 
     let Ok(CargoSearch { crates }) = serde_json::from_str::<CargoSearch>(&res)
         .inspect_err(|e| tracing::error!("Serde Crates.io: {e:?}"))
     else {
-        return Ok(Err(format!("No se pudo deserializar la respuesta")));
+        return Ok(Err("No se pudo deserializar la respuesta".to_string()));
     };
 
     let crates = crates

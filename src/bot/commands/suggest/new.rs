@@ -13,7 +13,7 @@ pub async fn nueva(
     #[description = "Cuentanos acerca de tu sugerencia"] contenido: String,
 ) -> Result<(), bot::Error> {
     info!("Running create suggestion");
-    let data = ctx.clone().data();
+    let data = ctx.data();
 
     let msg_channel = ChannelId::new(data.secrets.channel_suggest);
 

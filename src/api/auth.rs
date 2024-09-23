@@ -15,7 +15,7 @@ pub async fn middleware(
 
     if header_key
         .as_ref()
-        .is_some_and(|k| k.to_str().unwrap() == &secrets.api_key)
+        .is_some_and(|k| k.to_str().unwrap() == secrets.api_key)
     {
         return Ok(next.run(req).await);
     }
