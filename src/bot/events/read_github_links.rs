@@ -165,14 +165,18 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
         })
     } else {
         return false;
-    };
+    }.replace("https://github.com/", "https://raw.githubusercontent.com/");
 
     let without_hidden = hidden_link_regex.replace_all(&replaced, "");
 
     let without_spaces = split_message_regex.split(&without_hidden);
 
+    
+    let links = without_spaces
+        .filter(|s| s.starts_with("https://raw.githubusercontent.com/"));
+
     let mut dup: Vec<&str> = Vec::new();
-    for link in without_spaces {
+    for link in links {
         if dup.contains(&link) {
             continue;
         }
