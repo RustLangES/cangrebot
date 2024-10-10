@@ -6,7 +6,7 @@ Bot de la comunidad de Discord de RustLang en Español.
 
 ### 1. Modificar variables de entorno:
 
-Para que el bot se ejecute tenemos que crear el archivo `Secret.toml` con sus respectivas variables:
+Para que el bot se ejecute tenemos que crear el archivo `Secrets.toml` con sus respectivas variables:
 
 - `DISCORD_TOKEN` Token del bot
 - `GUILD_ID` Id del Servidor

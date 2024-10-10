@@ -149,13 +149,18 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
         return Ok(false);
     }
 
+    let content = match &msg.referenced_message {
+        Some(reference) => &format!("&compile\n{}", &reference.content),
+        None => &msg.content
+    };
+
     msg.react(ctx, ReactionType::Unicode("🫡".to_string()))
         .await
         .unwrap();
 
     let parts: Vec<&str> = Regex::new(r"[ \n]")
         .unwrap()
-        .splitn(&msg.content, 2)
+        .splitn(&content, 2)
         .collect();
 
     if parts.len() < 2 {
@@ -216,7 +221,7 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
         return Ok(true);
     }
 
-    if !msg.content.contains("--no-main") {
+    if !content.contains("--no-main") {
         let template = MAIN_TEMPLATES
             .iter()
             .find(|&&(lang, _)| lang == language)
@@ -234,7 +239,7 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
         }
     }
 
-    if msg.content.contains("--escape") {
+    if content.contains("--escape") {
         code_block = code_block.replace(r"\`", "`");
     }
 
