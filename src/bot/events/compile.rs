@@ -150,8 +150,8 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
     }
 
     let content = match &msg.referenced_message {
-        Some(reference) => &format!("&compile\n{}", &reference.content),
-        None => &msg.content
+        Some(reference) => format!("&compile\n{}", reference.content),
+        None => msg.content.clone()
     };
 
     msg.react(ctx, ReactionType::Unicode("🫡".to_string()))
