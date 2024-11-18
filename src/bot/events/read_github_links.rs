@@ -1,48 +1,51 @@
-use poise::serenity_prelude::{Context, CreateMessage, Message, MESSAGE_CODE_LIMIT};
+use poise::serenity_prelude::{ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Message, MESSAGE_CODE_LIMIT};
 use regex::{Captures, Regex};
 use reqwest::get;
 use std::collections::{HashMap, HashSet};
 use std::option::Option;
+use std::sync::LazyLock;
 
-static COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = HashMap::from([
-    ("c", "// {}"),
-    ("cpp", "// {}"),
-    ("cs", "// {}"),
-    ("java", "// {}"),
-    ("js", "// {}"),
-    ("go", "// {}"),
-    ("kt", "// {}"),
-    ("swift", "// {}"),
-    ("rs", "// {}"),
-    ("scala", "// {}"),
-    ("py", "# {}"),
-    ("sh", "# {}"),
-    ("pl", "# {}"),
-    ("rb", "# {}"),
-    ("r", "# {}"),
-    ("ps1", "# {}"),
-    ("php", "// {}"),
-    ("sql", "-- {}"),
-    ("html", "<!-- {} -->"),
-    ("xml", "<!-- {} -->"),
-    ("css", "/* {} */"),
-    ("lisp", "; {}"),
-    ("scm", "; {}"),
-    ("hs", "-- {}"),
-    ("m", "% {}"),
-    ("asm", "; {}"),
-    ("pro", "% {}"),
-    ("vim", "\" {}"),
-    ("ini", "; {}"),
-    ("jl", "# {}"),
-    ("erl", "% {}"),
-    ("ex", "# {}"),
-    ("lua", "-- {}"),
-    ("tcl", "# {}"),
-    ("yml", "# {}"),
-    ("md", "[comment]: # ({})"),
-    ("lhs", "-- {}"),
-]);
+static COMMENT_TEMPLATES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
+    HashMap::from([
+        ("c", "// {}"),
+        ("cpp", "// {}"),
+        ("cs", "// {}"),
+        ("java", "// {}"),
+        ("js", "// {}"),
+        ("go", "// {}"),
+        ("kt", "// {}"),
+        ("swift", "// {}"),
+        ("rs", "// {}"),
+        ("scala", "// {}"),
+        ("py", "# {}"),
+        ("sh", "# {}"),
+        ("pl", "# {}"),
+        ("rb", "# {}"),
+        ("r", "# {}"),
+        ("ps1", "# {}"),
+        ("php", "// {}"),
+        ("sql", "-- {}"),
+        ("html", "<!-- {} -->"),
+        ("xml", "<!-- {} -->"),
+        ("css", "/* {} */"),
+        ("lisp", "; {}"),
+        ("scm", "; {}"),
+        ("hs", "-- {}"),
+        ("m", "% {}"),
+        ("asm", "; {}"),
+        ("pro", "% {}"),
+        ("vim", "\" {}"),
+        ("ini", "; {}"),
+        ("jl", "# {}"),
+        ("erl", "% {}"),
+        ("ex", "# {}"),
+        ("lua", "-- {}"),
+        ("tcl", "# {}"),
+        ("yml", "# {}"),
+        ("md", "[comment]: # ({})"),
+        ("lhs", "-- {}"),
+    ])
+});
 
 pub enum RangeOrIndex {
     Language(String),
@@ -146,7 +149,7 @@ async fn read_message(link: String) -> Option<String> {
 }
 
 pub async fn message(ctx: &Context, msg: &Message) -> bool {
-    if msg.author.bot || msg.content.starts_with("noembed") {
+    if msg.author.bot {
         return false;
     }
 
@@ -165,7 +168,6 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
     let without_hidden = hidden_link_regex.replace_all(&replaced, "");
 
     let without_spaces = without_hidden.split('\n');
-    // let without_spaces = split_message_regex.split(&without_hidden);
 
     let links = without_spaces
         .filter(|s| !s.starts_with('!') && s.starts_with("https://raw.githubusercontent.com/"));
@@ -173,21 +175,63 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
     let dup = HashSet::<&str>::from_iter(links);
     for link in dup {
         if let Some(content) = read_message(link.to_string()).await {
+            let message = CreateMessage::new()
+                .content(content)
+                .button(
+                    CreateButton::new("delete_github_embed")
+                        .label("Borrar")
+                        .style(ButtonStyle::Danger)
+                );
+
             if let Some(reference) = &msg.message_reference {
                 msg.channel_id
                     .send_message(
                         &ctx,
-                        CreateMessage::new()
-                            .content(content)
-                            .reference_message(reference.clone()),
+                        message
+                            .reference_message(reference.clone())
                     )
                     .await
                     .unwrap();
             } else {
-                msg.reply(&ctx, content).await.unwrap();
+                msg.channel_id
+                    .send_message(
+                        &ctx,
+                        message
+                            .reference_message(msg)
+                    )
+                    .await
+                    .unwrap();
             }
         }
     }
+
+    true
+}
+
+pub async fn handle_delete_embed(ctx: &Context, interaction: &ComponentInteraction) -> bool {
+    if interaction.data.custom_id != "delete_github_embed" {
+        return false;
+    }
+
+    if interaction.message.author.id != interaction.user.id {
+        interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .ephemeral(true)
+                        .content("El bloque de codigo no era para ti.")
+                )
+            )
+            .await
+            .ok();
+
+        return true;
+    }
+
+    interaction.message.delete(&ctx)
+        .await
+        .ok();
 
     true
 }
