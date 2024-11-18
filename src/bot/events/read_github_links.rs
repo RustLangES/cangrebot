@@ -4,7 +4,7 @@ use reqwest::get;
 use std::collections::{HashMap, HashSet};
 use std::option::Option;
 
-static ref COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = HashMap::from([
+static COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = HashMap::from([
     ("c", "// {}"),
     ("cpp", "// {}"),
     ("cs", "// {}"),
