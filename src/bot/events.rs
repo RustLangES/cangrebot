@@ -33,6 +33,14 @@ pub async fn handle(
         FullEvent::GuildMemberAddition { new_member } => {
             join::guild_member_addition(ctx, &GuildId::new(data.secrets.guild_id), new_member)
                 .await;
+        },
+        FullEvent::InteractionCreate { interaction } => {
+            // for buttons
+            if let Some (interaction) = interaction.as_message_component() {
+                if read_github_links::handle_delete_embed(ctx, interaction).await {
+    
+                }
+            }
         }
         _ => {}
     }

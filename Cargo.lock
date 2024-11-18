@@ -371,7 +371,6 @@ dependencies = [
  "chrono",
  "color-eyre",
  "gen_welcome",
- "lazy_static",
  "once_cell",
  "parking_lot",
  "poise",
