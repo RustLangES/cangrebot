@@ -1,53 +1,48 @@
-use lazy_static::lazy_static;
 use poise::serenity_prelude::{Context, CreateMessage, Message, MESSAGE_CODE_LIMIT};
 use regex::{Captures, Regex};
 use reqwest::get;
 use std::collections::{HashMap, HashSet};
 use std::option::Option;
 
-lazy_static! {
-    static ref COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = {
-        let mut m = HashMap::new();
-        m.insert("c", "// {}");
-        m.insert("cpp", "// {}");
-        m.insert("cs", "// {}");
-        m.insert("java", "// {}");
-        m.insert("js", "// {}");
-        m.insert("go", "// {}");
-        m.insert("kt", "// {}");
-        m.insert("swift", "// {}");
-        m.insert("rs", "// {}");
-        m.insert("scala", "// {}");
-        m.insert("py", "# {}");
-        m.insert("sh", "# {}");
-        m.insert("pl", "# {}");
-        m.insert("rb", "# {}");
-        m.insert("r", "# {}");
-        m.insert("ps1", "# {}");
-        m.insert("php", "// {}");
-        m.insert("sql", "-- {}");
-        m.insert("html", "<!-- {} -->");
-        m.insert("xml", "<!-- {} -->");
-        m.insert("css", "/* {} */");
-        m.insert("lisp", "; {}");
-        m.insert("scm", "; {}");
-        m.insert("hs", "-- {}");
-        m.insert("m", "% {}");
-        m.insert("asm", "; {}");
-        m.insert("pro", "% {}");
-        m.insert("vim", "\" {}");
-        m.insert("ini", "; {}");
-        m.insert("jl", "# {}");
-        m.insert("erl", "% {}");
-        m.insert("ex", "# {}");
-        m.insert("lua", "-- {}");
-        m.insert("tcl", "# {}");
-        m.insert("yml", "# {}");
-        m.insert("md", "[comment]: # ({})");
-        m.insert("lhs", "-- {}");
-        m
-    };
-}
+static COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = HashMap::from([
+    ("c", "// {}"),
+    ("cpp", "// {}"),
+    ("cs", "// {}"),
+    ("java", "// {}"),
+    ("js", "// {}"),
+    ("go", "// {}"),
+    ("kt", "// {}"),
+    ("swift", "// {}"),
+    ("rs", "// {}"),
+    ("scala", "// {}"),
+    ("py", "# {}"),
+    ("sh", "# {}"),
+    ("pl", "# {}"),
+    ("rb", "# {}"),
+    ("r", "# {}"),
+    ("ps1", "# {}"),
+    ("php", "// {}"),
+    ("sql", "-- {}"),
+    ("html", "<!-- {} -->"),
+    ("xml", "<!-- {} -->"),
+    ("css", "/* {} */"),
+    ("lisp", "; {}"),
+    ("scm", "; {}"),
+    ("hs", "-- {}"),
+    ("m", "% {}"),
+    ("asm", "; {}"),
+    ("pro", "% {}"),
+    ("vim", "\" {}"),
+    ("ini", "; {}"),
+    ("jl", "# {}"),
+    ("erl", "% {}"),
+    ("ex", "# {}"),
+    ("lua", "-- {}"),
+    ("tcl", "# {}"),
+    ("yml", "# {}"),
+    ("md", "[comment]: # ({})"),
+    ("lhs", "-- {}"),
+]);
 
 pub enum RangeOrIndex {
     Language(String),
