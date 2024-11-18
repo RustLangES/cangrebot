@@ -2,7 +2,7 @@ use lazy_static::lazy_static;
 use poise::serenity_prelude::{Context, CreateMessage, Message, MESSAGE_CODE_LIMIT};
 use regex::{Captures, Regex};
 use reqwest::get;
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::option::Option;
 
 lazy_static! {
@@ -155,9 +155,8 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
         return false;
     }
 
-    let repo_regex = Regex::new(r"(https://github\.com/(?:[^/]+/){2})blob/(.*)").unwrap();
+    let repo_regex = Regex::new("(https://github\\.com/(?:[^/]+/){2})blob/(.*)").unwrap();
     let hidden_link_regex = Regex::new(r"[<>]").unwrap();
-    let split_message_regex = Regex::new(r"[\n ]").unwrap();
 
     let replaced = if repo_regex.is_match(&msg.content) {
         repo_regex.replace_all(&msg.content, |captures: &Captures| {
@@ -165,22 +164,19 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
         })
     } else {
         return false;
-    }.replace("https://github.com/", "https://raw.githubusercontent.com/");
+    }
+    .replace("https://github.com/", "https://raw.githubusercontent.com/");
 
     let without_hidden = hidden_link_regex.replace_all(&replaced, "");
 
-    let without_spaces = split_message_regex.split(&without_hidden);
+    let without_spaces = without_hidden.split('\n');
+    // let without_spaces = split_message_regex.split(&without_hidden);
 
-    
     let links = without_spaces
-        .filter(|s| s.starts_with("https://raw.githubusercontent.com/"));
+        .filter(|s| !s.starts_with('!') && s.starts_with("https://raw.githubusercontent.com/"));
 
-    let mut dup: Vec<&str> = Vec::new();
-    for link in links {
-        if dup.contains(&link) {
-            continue;
-        }
-
+    let dup = HashSet::<&str>::from_iter(links);
+    for link in dup {
         if let Some(content) = read_message(link.to_string()).await {
             if let Some(reference) = &msg.message_reference {
                 msg.channel_id
@@ -196,8 +192,6 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
                 msg.reply(&ctx, content).await.unwrap();
             }
         }
-
-        dup.push(link);
     }
 
     true
