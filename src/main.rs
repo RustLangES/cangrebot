@@ -1,3 +1,5 @@
+#![feature(lazy_cell)]
+
 pub use poise::serenity_prelude as serenity;
 pub use secrets::CangrebotSecrets;
 
