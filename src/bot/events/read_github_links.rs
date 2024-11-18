@@ -1,12 +1,12 @@
+use lazy_static::lazy_static;
 use poise::serenity_prelude::{ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Message, MESSAGE_CODE_LIMIT};
 use regex::{Captures, Regex};
 use reqwest::get;
 use std::collections::{HashMap, HashSet};
 use std::option::Option;
-use std::sync::LazyLock;
 
-static COMMENT_TEMPLATES: LazyLock<HashMap<&'static str, &'static str>> = LazyLock::new(|| {
-    HashMap::from([
+lazy_static! {
+    static ref COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = HashMap::from([
         ("c", "// {}"),
         ("cpp", "// {}"),
         ("cs", "// {}"),
@@ -44,8 +44,8 @@ static COMMENT_TEMPLATES: LazyLock<HashMap<&'static str, &'static str>> = LazyLo
         ("yml", "# {}"),
         ("md", "[comment]: # ({})"),
         ("lhs", "-- {}"),
-    ])
-});
+    ]);
+}
 
 pub enum RangeOrIndex {
     Language(String),
