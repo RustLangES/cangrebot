@@ -2,6 +2,7 @@ use lazy_static::lazy_static;
 use poise::serenity_prelude::{ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Message, MESSAGE_CODE_LIMIT};
 use regex::{Captures, Regex};
 use reqwest::get;
+use tracing::info;
 use std::collections::{HashMap, HashSet};
 use std::option::Option;
 
@@ -213,7 +214,15 @@ pub async fn handle_delete_embed(ctx: &Context, interaction: &ComponentInteracti
         return false;
     }
 
-    if interaction.message.author.id != interaction.user.id {
+    info!("{:?}", interaction.message.mentions);
+
+    let reference_message = interaction
+        .message
+        .referenced_message
+        .as_ref()
+        .unwrap();
+
+    if reference_message.author.id != interaction.user.id {
         interaction
             .create_response(
                 ctx,

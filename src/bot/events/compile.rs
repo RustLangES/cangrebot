@@ -1,11 +1,8 @@
-mod api;
-
+use pistones::Client;
 use poise::serenity_prelude::{
-    Context, CreateEmbed, CreateEmbedFooter, CreateMessage, Message, ReactionType,
+    Context, CreateEmbed, CreateMessage, Message, ReactionType
 };
 use regex::Regex;
-use std::time::Duration;
-use tokio::time::sleep;
 
 use crate::bot;
 
@@ -142,7 +139,6 @@ static MISSING_CODE_BLOCK: &str =
 static MISSING_LANGUAGE: &str =
     "Falta especificar un lenguaje a tu bloque de código, especificalo después de los \\`\\`\\`.";
 static INVALID_LANGUAGE: &str = "El lenguaje especificado es invalido, los lenguajes validos son: ";
-static INVALID_RESPONSE: &str = "La respuesta recibida del compilador no se pudo leer.";
 
 pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
     if msg.author.bot || !msg.content.starts_with("&compile") {
@@ -243,98 +239,36 @@ pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, bot::Error> {
         code_block = code_block.replace(r"\`", "`");
     }
 
-    let args = args_and_code[end_code.unwrap() + 3..]
-        .to_string()
-        .replace("\n", " ");
 
-    let api_response = api::compile_code(language, code_block, args).await;
+    let result = Client::new()
+        .await?
+        .run(language, code_block)
+        .await?
+        .run;
 
-    if let Some(parsed_res) = api_response {
-        let mut response = parsed_res;
-        while response.status != "completed" {
-            sleep(Duration::from_secs(3)).await;
-            response = if let Some(new_status) = api::check_status(response.id).await {
-                new_status
-            } else {
-                msg.reply(ctx, INVALID_RESPONSE).await?;
-                return Ok(true);
-            };
-        }
-
-        let mut response_embed = CreateEmbed::default();
-
-        let mut succeded = false;
-
-        if let Some(build_details) = api::check_details(response.id).await {
-            if build_details.build_result.unwrap_or("success".to_string()) != "success" {
-                response_embed = response_embed
-                    .title("Error de build!")
-                    .description(format!(
-                        "```\n{}\n```",
-                        build_details
-                            .build_stderr
-                            .unwrap_or("<no se proporciono ningún error de build.>".to_string())
-                            .replace("```", r"`‎`‎`")
+    msg.channel_id.send_message(
+        &ctx.http,
+        CreateMessage::new()
+            .embed(
+                CreateEmbed::new()
+                    .color(if result.code != 0 { 0xFF0000 } else { 0x00FF00 })
+                    .title(format!(
+                        "El programa se terminó {}",
+                        if let Some(signal) = result.signal {
+                            format!("con {signal} ({})", result.code)
+                        } else {
+                            format!("con código {}", result.code)
+                        }
                     ))
-                    .color(0xFF0000)
-                    .footer(CreateEmbedFooter::new(format!(
-                        "El compilador salio con el código: {}",
-                        build_details.build_exit_code.unwrap_or_default()
-                    )));
-            } else if build_details.result.unwrap_or("success".to_string()) != "success" {
-                response_embed = response_embed
-                    .title("Error de ejecución!")
                     .description(format!(
-                        "```\n{}\n```",
-                        build_details
-                            .stderr
-                            .unwrap_or("<no se proporciono ningún error de ejecución>".to_string())
-                            .replace("```", r"`‎`‎`")
-                    ))
-                    .color(0xFF0000)
-                    .footer(CreateEmbedFooter::new(format!(
-                        "El programa salio con el código: {}",
-                        build_details.exit_code.unwrap_or_default()
-                    )))
-            } else {
-                response_embed = response_embed
-                    .title("El código se ejecuto correctamente")
-                    .description(format!(
-                        "```\n{}\n```",
-                        build_details
+                        "```{}```",
+                        result
                             .stdout
-                            .unwrap_or("<el código no escribió en la consola.>".to_string())
-                            .replace("```", r"`‎`‎`")
+                            .replace("```", "`‎`‎`")
                     ))
-                    .color(0x00FF00)
-                    .footer(CreateEmbedFooter::new(format!(
-                        "El programa salio con el código: {}",
-                        build_details.exit_code.unwrap_or_default()
-                    )));
-
-                succeded = true;
-            }
-
-            msg.channel_id
-                .send_message(
-                    ctx,
-                    CreateMessage::new()
-                        .embed(response_embed)
-                        .reference_message(msg),
-                )
-                .await?;
-
-            if !succeded {
-                msg.react(ctx, ReactionType::Unicode("❌".to_string()))
-                    .await
-                    .unwrap();
-            }
-        } else {
-            msg.reply(ctx, INVALID_RESPONSE).await?;
-        }
-    } else {
-        msg.reply(ctx, INVALID_RESPONSE).await?;
-    }
+            )
+    )
+        .await?;
 
     Ok(true)
 }

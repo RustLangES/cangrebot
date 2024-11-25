@@ -374,6 +374,7 @@ dependencies = [
  "lazy_static",
  "once_cell",
  "parking_lot",
+ "pistones",
  "poise",
  "regex",
  "reqwest",
@@ -2246,6 +2247,17 @@ name = "pin-utils"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
+
+[[package]]
+name = "pistones"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "036e98b0459c7eb67dc6591231cfb2d1e112214ec408f548fa2cc854806e95fe"
+dependencies = [
+ "reqwest",
+ "serde",
+ "thiserror",
+]
 
 [[package]]
 name = "pkg-config"
