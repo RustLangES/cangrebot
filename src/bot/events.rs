@@ -37,8 +37,11 @@ pub async fn handle(
         FullEvent::InteractionCreate { interaction } => {
             // for buttons
             if let Some (interaction) = interaction.as_message_component() {
-                if read_github_links::handle_delete_embed(ctx, interaction).await {
-    
+                if
+                    read_github_links::handle_delete_embed(ctx, interaction).await
+                    || read_github_links::handle_save_embed(ctx, interaction).await
+                {
+                    return Ok(());
                 }
             }
         }
