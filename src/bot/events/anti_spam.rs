@@ -63,6 +63,9 @@ static MESSAGE_TRACKER: Lazy<Mutex<Vec<MessageTracker>>> = Lazy::new(|| Mutex::n
 // }
 
 pub async fn message(ctx: &Context, new_message: &Message) -> Result<bool, bot::Error> {
+    // disable anti spam as it crashes on that unwrap (should be handled.)
+    return Ok(false);
+
     let author_id = new_message.author.id;
     let mut member = new_message
         .guild_id

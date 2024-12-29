@@ -214,15 +214,7 @@ pub async fn handle_delete_embed(ctx: &Context, interaction: &ComponentInteracti
         return false;
     }
 
-    info!("{:?}", interaction.message.mentions);
-
-    let reference_message = interaction
-        .message
-        .referenced_message
-        .as_ref()
-        .unwrap();
-
-    if reference_message.author.id != interaction.user.id {
+    if interaction.message.mentions.first().map(|m| m.id != interaction.user.id).unwrap_or(true)  {
         interaction
             .create_response(
                 ctx,
