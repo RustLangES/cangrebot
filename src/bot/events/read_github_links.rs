@@ -1,8 +1,7 @@
 use lazy_static::lazy_static;
-use poise::serenity_prelude::{ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Message, MESSAGE_CODE_LIMIT};
+use poise::serenity_prelude::{ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Message, ReactionType, MESSAGE_CODE_LIMIT};
 use regex::{Captures, Regex};
 use reqwest::get;
-use tracing::info;
 use std::collections::{HashMap, HashSet};
 use std::option::Option;
 
@@ -182,6 +181,13 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
                     CreateButton::new("delete_github_embed")
                         .label("Borrar")
                         .style(ButtonStyle::Danger)
+                        .emoji(ReactionType::try_from("🗑️").unwrap())
+                )
+                .button(
+                    CreateButton::new("save_github_embed")
+                        .label("Guardar")
+                        .style(ButtonStyle::Secondary)
+                        .emoji(ReactionType::try_from("💾").unwrap())
                 );
 
             if let Some(reference) = &msg.message_reference {
@@ -235,4 +241,50 @@ pub async fn handle_delete_embed(ctx: &Context, interaction: &ComponentInteracti
         .ok();
 
     true
+}
+
+pub async fn handle_save_embed(ctx: &Context, interaction: &ComponentInteraction) -> bool {
+    if interaction.data.custom_id != "save_github_embed" {
+        return false;
+    }
+
+    let send_result = interaction
+        .user
+        .dm(
+            ctx,
+            CreateMessage::new()
+                .content(
+                    interaction
+                        .message
+                        .content
+                        .clone()
+                        .replacen("Mostrando", "El codigo que solicitaste:", 1)
+                )
+        )
+        .await;
+
+    match send_result {
+        Ok(_) => interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .content("Enviado. Revisa tus mensajes directos con el bot.")
+                        .ephemeral(true)
+                )
+            ),
+        Err(err) => interaction
+            .create_response(
+                ctx,
+                CreateInteractionResponse::Message(
+                    CreateInteractionResponseMessage::new()
+                        .content(format!("Error: {err}"))
+                        .ephemeral(true)
+                )
+            )
+    }
+        .await
+        .ok();
+
+    return true;
 }
