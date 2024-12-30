@@ -22,11 +22,7 @@ parking_lot = { version = "0.12", features = ["send_guard"] }
 poise = "0.6.1"
 reqwest = { version = "0.11.27", features = ["json"] } # Version used by songbird::input::YoutubeDl
 regex = "1.10.2"
-scraper = { version = "0.19.0", features = [
-    "indexmap",
-    "deterministic",
-    "atomic",
-] }
+scraper = { version = "0.19.0", features = ["indexmap", "deterministic", "atomic"] }
 serde = "1.0.188"
 serde_json = "1.0.105"
 songbird = { version = "0.4.1", features = ["serenity"] }
