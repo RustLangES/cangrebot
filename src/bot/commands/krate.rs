@@ -23,7 +23,7 @@ pub async fn cargo(
     Ok(())
 }
 
-async fn autocomplete(
+pub async fn autocomplete(
     _: bot::Context<'_>,
     partial: &str,
 ) -> impl Iterator<Item = AutocompleteChoice> {
