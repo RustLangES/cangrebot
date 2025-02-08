@@ -1,14 +1,13 @@
-use std::sync::Arc;
-
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use serenity::builder::{CreateAllowedMentions, CreateForumPost, CreateMessage};
-use serenity::http::Http;
-use serenity::model::prelude::ChannelId;
 use tracing::info;
+
+use crate::api::RouteState;
+use crate::serenity::builder::{CreateAllowedMentions, CreateForumPost, CreateMessage};
+use crate::serenity::model::prelude::ChannelId;
 
 const PARTICIPANT_ROLE: u64 = 1224238464958992495;
 
@@ -19,8 +18,8 @@ pub struct DailyChallengeRequest {
     tag_name: String,
 }
 
-pub async fn run_daily_challenge(
-    State(ctx): State<Arc<Http>>,
+pub async fn daily_challenge(
+    State((secrets, ctx)): State<RouteState>,
     Json(DailyChallengeRequest {
         title,
         message,
@@ -28,7 +27,7 @@ pub async fn run_daily_challenge(
     }): Json<DailyChallengeRequest>,
 ) -> impl IntoResponse {
     info!("Running daily challenge events");
-    let msg_channel = ChannelId::new(1219703076944871616_u64.into());
+    let msg_channel = ChannelId::new(secrets.channel_daily);
 
     let Ok(forum) = msg_channel.to_channel(&ctx).await else {
         return (
@@ -36,9 +35,11 @@ pub async fn run_daily_challenge(
             "Cannot convert to channel",
         );
     };
+
     let Some(forum) = forum.guild() else {
         return (StatusCode::NOT_FOUND, "GuildId not found");
     };
+
     let Some(tag) = forum.available_tags.iter().find(|t| t.name == tag_name) else {
         return (StatusCode::NOT_FOUND, "Tag not found");
     };

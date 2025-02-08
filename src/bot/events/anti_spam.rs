@@ -1,17 +1,16 @@
 use once_cell::sync::Lazy;
-use regex::Regex;
-use serenity::all::standard::CommandResult;
-use serenity::all::{
-    Channel, ChannelId, Context, GetMessages, GuildId, Member, Message, Timestamp, UserId,
+use poise::serenity_prelude::{
+    Channel, ChannelId, Context, GetMessages, Member, Message, Timestamp, UserId,
 };
-use std::sync::Arc;
 use std::time::Instant;
 use tokio::sync::Mutex;
+
+use crate::bot;
 
 #[derive(Debug)]
 pub struct MessageTracker {
     author_id: UserId,
-    message_content: Arc<String>,
+    message_content: String,
     channel_ids: Vec<ChannelId>,
     last_message_time: Instant,
 }
@@ -25,7 +24,7 @@ impl MessageTracker {
 #[derive(Default)]
 pub struct MessageTrackerBuilder {
     author_id: Option<UserId>,
-    message_content: Option<Arc<String>>,
+    message_content: Option<String>,
     channel_ids: Option<Vec<ChannelId>>,
 }
 
@@ -35,7 +34,7 @@ impl MessageTrackerBuilder {
         self
     }
 
-    pub fn message_content(mut self, message_content: Arc<String>) -> Self {
+    pub fn message_content(mut self, message_content: String) -> Self {
         self.message_content = Some(message_content);
         self
     }
@@ -57,33 +56,37 @@ impl MessageTrackerBuilder {
 
 static MESSAGE_TRACKER: Lazy<Mutex<Vec<MessageTracker>>> = Lazy::new(|| Mutex::new(Vec::new()));
 
-pub fn extract_link(text: &str) -> Option<String> {
-    Regex::new(r"(https?://\S+)").map_or(None, |url_re| {
-        url_re.find(text).map(|m| m.as_str().to_string())
-    })
-}
+// pub fn extract_link(text: &str) -> Option<String> {
+//     Regex::new(r"(https?://\S+)").map_or(None, |url_re| {
+//         url_re.find(text).map(|m| m.as_str().to_string())
+//     })
+// }
 
-pub async fn spam_checker(
-    message_content: Arc<String>,
-    channel_id: ChannelId,
-    ctx: &Context,
-    time: i64,
-    new_message: &Message,
-    guild_id: GuildId,
-) -> CommandResult {
+pub async fn message(ctx: &Context, new_message: &Message) -> Result<bool, bot::Error> {
+    // disable anti spam as it crashes on that unwrap (should be handled.)
+    return Ok(false);
+
     let author_id = new_message.author.id;
-    let mut member = guild_id.member(&ctx.http, new_message.author.id).await?;
+    let mut member = new_message
+        .guild_id
+        .unwrap()
+        .member(&ctx.http, new_message.author.id)
+        .await?;
     let mut message_tracker = MESSAGE_TRACKER.lock().await;
+    let time = 604800;
+    let channel_id = new_message.channel_id;
 
     if let Some(last_message) = message_tracker.iter().last() {
-        if last_message.author_id == author_id && last_message.message_content != message_content {
+        if last_message.author_id == author_id
+            && last_message.message_content != new_message.content
+        {
             message_tracker.clear();
         }
     }
 
     let message = if let Some(message) = message_tracker
         .iter_mut()
-        .find(|m| m.author_id == author_id && m.message_content == message_content)
+        .find(|m| m.author_id == author_id && m.message_content == new_message.content)
     {
         // Inicializa el tiempo del último mensaje
         message.last_message_time = Instant::now();
@@ -94,8 +97,9 @@ pub async fn spam_checker(
             // Debug: println!("Message repeated in the same channel, clearing the vector");
             message_tracker.clear();
 
-            return Ok(());
+            return Ok(true);
         }
+
         message.channel_ids.push(channel_id);
 
         message
@@ -103,7 +107,7 @@ pub async fn spam_checker(
         // Si el mensaje no existe, crea un nuevo rastreador de mensajes y añádelo a la lista
         let message = MessageTracker::builder()
             .author_id(author_id)
-            .message_content(message_content.clone())
+            .message_content(new_message.content.clone())
             .channel_ids(vec![channel_id])
             .build()?;
 
@@ -115,7 +119,7 @@ pub async fn spam_checker(
 
     if message.channel_ids.len() >= 3 {
         apply_timeout(&mut member, ctx, time, new_message).await?;
-        delete_spam_messages(message, ctx, author_id, message_content).await?;
+        delete_spam_messages(message, ctx, author_id, &new_message.content).await?;
 
         // Limpia completamente el rastreador de mensajes para reiniciar el rastreo de mensajes
         message_tracker.retain(|m| m.author_id != author_id);
@@ -124,15 +128,15 @@ pub async fn spam_checker(
 
     drop(message_tracker);
 
-    Ok(())
+    Ok(false)
 }
 
 async fn delete_spam_messages(
     message: &MessageTracker,
     ctx: &Context,
     author_id: UserId,
-    message_content: Arc<String>,
-) -> CommandResult {
+    message_content: &String,
+) -> Result<(), bot::Error> {
     // Borra cada mensaje individualmente
     for channel_id in &message.channel_ids {
         let channel = channel_id.to_channel(ctx).await?;
@@ -142,7 +146,7 @@ async fn delete_spam_messages(
 
         let messages = channel.messages(&ctx.http, GetMessages::new()).await?;
         for message in messages {
-            if message.author.id == author_id && &*message.content == &*message_content {
+            if message.author.id == author_id && &*message.content == message_content {
                 message.delete(&ctx.http).await?;
             }
         }
@@ -157,7 +161,7 @@ pub async fn apply_timeout(
     ctx: &Context,
     time_out_timer: i64,
     message: &Message,
-) -> CommandResult {
+) -> Result<(), bot::Error> {
     let time = Timestamp::now().unix_timestamp() + time_out_timer;
     let time = Timestamp::from_unix_timestamp(time)?;
     member

@@ -25,3 +25,5 @@ jobs:
             DISCORD_TOKEN = '${{ secrets.DISCORD_TOKEN }}'
             GUILD_ID = '${{ secrets.GUILD_ID }}'
             BOT_APIKEY = '${{ secrets.BOT_APIKEY }}'
+            CHANNEL_DAILY = '${{ secrets.CHANNEL_DAILY }}'
+            CHANNEL_SUGGEST = '${{ secrets.CHANNEL_SUGGEST }}'

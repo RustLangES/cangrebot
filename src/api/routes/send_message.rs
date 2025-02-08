@@ -1,14 +1,12 @@
-use std::sync::Arc;
-
+use crate::api::RouteState;
+use crate::serenity::all::MESSAGE_CODE_LIMIT;
+use crate::serenity::builder::{CreateAllowedMentions, CreateMessage};
+use crate::serenity::model::prelude::ChannelId;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
 use axum::Json;
 use serde::{Deserialize, Serialize};
-use serenity::all::MESSAGE_CODE_LIMIT;
-use serenity::builder::{CreateAllowedMentions, CreateMessage};
-use serenity::http::Http;
-use serenity::model::prelude::ChannelId;
 use tracing::info;
 
 #[derive(Deserialize, Serialize)]
@@ -27,7 +25,7 @@ fn split_into_chunks(s: &str, chunk_size: usize) -> Vec<&str> {
 }
 
 pub async fn send_message(
-    State(ctx): State<Arc<Http>>,
+    State((_, ctx)): State<RouteState>,
     Json(SendMessagePayload {
         message,
         channel_id,
