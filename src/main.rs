@@ -5,7 +5,6 @@ use std::net::SocketAddr;
 
 use axum::{Router, ServiceExt};
 use poise::serenity_prelude::Client;
-use shuttle_runtime::SecretStore;
 
 mod api;
 mod bot;
@@ -16,9 +15,8 @@ pub struct CustomService {
     router: Router,
 }
 
-#[shuttle_runtime::async_trait]
-impl shuttle_runtime::Service for CustomService {
-    async fn bind(mut self, addr: SocketAddr) -> Result<(), shuttle_runtime::Error> {
+impl CustomService {
+    async fn bind(mut self, addr: SocketAddr) -> Result<(), std::io::Error> {
         let router = self.router.into_service();
 
         let listener = tokio::net::TcpListener::bind(&addr).await?;
@@ -37,21 +35,19 @@ impl shuttle_runtime::Service for CustomService {
     }
 }
 
-#[shuttle_runtime::main]
-async fn init(
-    #[shuttle_runtime::Secrets] secret_store: SecretStore,
-) -> Result<CustomService, shuttle_runtime::Error> {
-    let Ok(_) = color_eyre::install() else {
-        panic!("Failed to install color_eyre");
-    };
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    color_eyre::install().expect("Failed to install color_eyre");
 
-    let secrets = CangrebotSecrets::from(secret_store);
+    let secrets = CangrebotSecrets::from(std::env::var);
 
     let discord_bot = bot::setup(&secrets).await?;
     let router = api::build_router(&secrets, discord_bot.http.clone());
 
-    Ok(CustomService {
+    let mut custom_service = CustomService {
         discord_bot,
         router,
-    })
+    };
+    custom_service.discord_bot.start_autosharded().await?;
+    Ok(())
 }

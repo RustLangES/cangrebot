@@ -1,4 +1,4 @@
-use shuttle_runtime::SecretStore;
+use dotenvy::dotenv;
 use tracing::warn;
 
 #[derive(Clone, Debug)]
@@ -17,31 +17,25 @@ pub struct CangrebotSecrets {
     pub guild_id: u64,
 }
 
-impl From<SecretStore> for CangrebotSecrets {
-    fn from(secrets: SecretStore) -> Self {
+impl CangrebotSecrets {
+    pub fn from<'a>(secrets: fn(&'a str) -> Result<String, std::env::VarError>) -> Self {
+        dotenv().ok();
         Self {
-            api_key: secrets
-                .get("BOT_APIKEY")
-                .expect("'BOT_APIKEY' was not found"),
-            channel_daily: secrets
-                .get("CHANNEL_DAILY")
+            api_key: secrets("BOT_APIKEY").expect("'BOT_APIKEY' was not found"),
+            channel_daily: secrets("CHANNEL_DAILY")
                 .expect("'CHANNEL_DAILY' was not found")
                 .parse()
                 .expect("Cannot parse 'CHANNEL_DAILY'"),
-            channel_suggest: secrets
-                .get("CHANNEL_SUGGEST")
+            channel_suggest: secrets("CHANNEL_SUGGEST")
                 .expect("'CHANNEL_SUGGEST' was not found")
                 .parse()
                 .expect("Cannot parse 'CHANNEL_SUGGEST'"),
-            discord_prefix: secrets.get("DISCORD_PREFIX").unwrap_or_else(|| {
+            discord_prefix: secrets("DISCORD_PREFIX").unwrap_or_else(|_| {
                 warn!("'DISCORD_PREFIX' was not found. Defaults to \"&\"");
                 "&".to_owned()
             }),
-            discord_token: secrets
-                .get("DISCORD_TOKEN")
-                .expect("'DISCORD_TOKEN' was not found"),
-            guild_id: secrets
-                .get("GUILD_ID")
+            discord_token: secrets("DISCORD_TOKEN").expect("'DISCORD_TOKEN' was not found"),
+            guild_id: secrets("GUILD_ID")
                 .expect("'GUILD_ID' was not found")
                 .parse()
                 .expect("Cannot parse 'GUILD_ID'"),
