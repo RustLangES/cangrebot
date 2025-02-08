@@ -47,7 +47,6 @@ in
           cmake
           toolchain
           pkg-config
-          cargo-shuttle
         ]
         ++ buildInputs;
       LD_LIBRARY_PATH = lib.makeLibraryPath buildInputs;
