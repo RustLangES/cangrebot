@@ -1,20 +1,14 @@
 // dep-installer-hack/build.rs
 
 fn main() {
-    // Install external dependency (in the shuttle container only)
-    if std::env::var("HOSTNAME")
-        .unwrap_or_default()
-        .contains("shuttle")
-        && !std::process::Command::new("apt")
-            .arg("install")
-            .arg("-y")
-            .arg("libopus-dev") // the apt package that a dependency of my project needs to compile
-            .arg("ffmpeg") // the apt package that a dependency of my project needs to compile
-            // can add more here
-            .status()
-            .expect("failed to run apt")
-            .success()
+    println!("cargo:rerun-if-changed=static/rust-examples");
+
+    if !std::process::Command::new("git")
+        .args(["submodule", "update", "--init", "--recursive"])
+        .status()
+        .expect("Fallo al ejecutar git submodule update")
+        .success()
     {
-        panic!("failed to install dependencies")
+        panic!("Submodule update failed. Run: git submodule update --init --recursive");
     }
 }
