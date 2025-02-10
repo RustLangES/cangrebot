@@ -14,22 +14,8 @@ Si has clonado el repositorio y el submódulo no aparece, debes inicializarlo y 
 
 Esto descargará el contenido del submódulo y lo sincronizará con la versión esperada en el repositorio principal.
 
-## Automatización con `build.rs`
+> El archivo `build.rs` detectará automáticamente si el submódulo existe. Si no está inicializado, mostrará un mensaje indicando que es necesario ejecutar: `git submodule update --init --recursive`
 
-Para evitar la necesidad de ejecutar este comando manualmente, el proyecto incluye un `build.rs` que se encarga de actualizar automáticamente el submódulo si la variable de entorno `SUBMOD` está activada:
-
-```sh
-SUBMOD=1 cargo build
-```
-
-Si esta variable no está presente, el submódulo no se actualizará automáticamente.
-
-También puedes hacer que `SUBMOD=1` se use siempre en `build.rs` sin necesidad de pasarla manualmente. Para ello, agrégalo en `.cargo/config.toml`:
-
-```toml
-[env]
-SUBMOD = "1"
-```
 
 ## Verificación del Estado del Submódulo
 
@@ -48,5 +34,5 @@ Esto mostrará si el submódulo está correctamente sincronizado o si requiere u
 
 ## Conclusión
 
-El uso de submódulos permite gestionar dependencias de manera eficiente sin mezclar código externo en el repositorio principal. Con la automatización en `build.rs`, se puede reducir la fricción al compilar el proyecto en diferentes entornos.
-
+El uso de submódulos permite gestionar dependencias de manera eficiente sin mezclar código externo en el repositorio principal. 
+Con la automatización en `build.rs`, se puede reducir la fricción al compilar el proyecto sin necesidad de pasos adicionales
