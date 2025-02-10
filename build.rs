@@ -7,7 +7,7 @@ fn main() {
         if !std::process::Command::new("git")
             .args(["submodule", "update", "--init", "--recursive"])
             .status()
-            .expect("Fallo al ejecutar git submodule update")
+            .expect("Failed to execute git submodule update")
             .success()
         {
             panic!("Submodule update failed. Run: git submodule update --init --recursive");
