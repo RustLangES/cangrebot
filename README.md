@@ -8,7 +8,11 @@ Bot de la comunidad de Discord de RustLang en Español.
 
 Las variables de entorno necesarias están documentadas en [`doc/VARIABLES.md`](doc/VARIABLES.md). Asegúrate de configurarlas antes de ejecutar el bot.
 
-### 2. Ejecutar el bot
+### 2. Gestión de Submódulos
+
+Para gestionar los submódulos del proyecto, consulta la documentación en [`doc/SUBMODULOS.md`](doc/SUBMODULOS.md).
+
+### 3. Ejecutar el bot
 
 Luego ejecuta el siguiente comando para ejecutar de modo local el bot:
 ```bash
