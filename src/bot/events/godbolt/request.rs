@@ -39,7 +39,7 @@ impl BaseCompilerRequest {
                 },
                 filters: SpecificCompilerFilters {
                     intel: true,
-                    demangle: true
+                    demangle: false
                 }
             }
         }

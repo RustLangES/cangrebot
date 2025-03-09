@@ -4,7 +4,6 @@ use reqwest::{Client as HttpClient, Error as ReqwestError};
 use semver::Error as VersionError;
 use serde::Deserialize;
 use thiserror::Error;
-use crate::bot::events::godbolt::mangling::remove_mangled;
 use super::{request::BaseCompilerRequest, response::CompilerResponse};
 
 #[derive(Error, Debug)]
@@ -124,14 +123,6 @@ impl GodBoltCompiler {
             }
         })
     }
-
-    pub fn supports_binary(&self) -> bool {
-        self.supports_binary
-    }
-
-    pub fn supports_execute(&self) -> bool {
-        self.supports_execute
-    }
 }
 
 static AVAILABLE_COMPILERS: OnceLock<Vec<GodBoltCompiler>> = OnceLock::new();
@@ -178,8 +169,6 @@ impl GodBoltCompilerOutput {
         let mut warnings = Vec::new();
 
         if let CompilationType::Assembly = self.run_type() {
-            actual_output = remove_mangled(&actual_output);
-
             if actual_output.trim().is_empty() {
                 warnings.push(
                     "**Warning:** Mangled sections are filtered by heuristics, consider unmangling relevant sections."
