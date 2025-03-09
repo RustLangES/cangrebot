@@ -3,7 +3,7 @@ mod events;
 mod util;
 
 use anyhow::anyhow;
-use poise::serenity_prelude::GuildId;
+use poise::serenity_prelude::{futures::TryFutureExt, GuildId};
 use tracing::info;
 
 use crate::{serenity, CangrebotSecrets};
@@ -28,7 +28,10 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
             commands: commands(),
 
             event_handler: |ctx, event, framework, data| {
-                Box::pin(events::handle(ctx, event, framework, data))
+                Box::pin(
+                    events::handle(ctx, event, framework, data)
+                        .inspect_err(|err| println!("{err:#}"))
+                )
             },
 
             pre_command: |ctx| {

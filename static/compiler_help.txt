@@ -1,0 +1,31 @@
+# CangreBot Compiler HELP
+To read this message you appended `--help` to any of the commands `&code-run` or `&code-asm`, the `--help` command cancels any other action, replacing it by this menu.
+
+**Compilation Types**
+- **`code-asm`:** This compilation type lets you compile a language and retrieve it's assembly if available.
+- **`code-run`:** This compilation type runs the specified code and displays it's output for you.
+
+The arguments passed to any of the compilation types do not matter, both are compilers and both behave the same, the only difference is the output.
+
+**Argument Types**
+There is two argument type you can pass to this.
+***Prefixed with `--compiler`:*** these arguments will be interpreted by the discord bot, and modify it's behavior, there are only a few commands you have with this argument type but this is planned to be extended in a future.
+
+The sintaxis for this arguments is the following: `--compiler-<arg>=<value>`.
+ 
+The `--compiler` prefixed arguments you have available to you are the following
+    - `--compiler-version`: This argument is a plain version, you can use "" for the value if the version has spaces, trunk versions are filtered due to common incompatibilities, but you might still find compilers that behave in weird ways, so beware of that.
+    - `--compiler-arch`: If supported this will let you change the compiler architecture, the architecture names depend on the compiler, it's recommended to read the [GodBolt Documentation](<https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md>), a widely supported architecture is `amd64`.
+
+***Compiler arguments:*** Basically any argument that doesn't start with `--compiler` will be directly passed to the godbolt compiler to alter the compilation, in the case of rust, some example arguments you can pass are `--debug` or `--release`.
+-# Beware that arguments that change the path might break the compilation.
+
+**General syntax**
+The command can be ran as
+
+&<type> [...args]
+\`\`\`<language>
+<code>
+\`\`\`
+
+-# Note that additional characters are not supported.

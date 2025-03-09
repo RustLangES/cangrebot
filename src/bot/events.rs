@@ -1,8 +1,9 @@
 mod anti_spam;
-mod compile;
+mod compiler;
 mod join;
 mod new_members_mention;
 mod read_github_links;
+mod godbolt;
 
 use poise::serenity_prelude::{Context, FullEvent, GuildId};
 use poise::FrameworkContext;
@@ -21,7 +22,7 @@ pub async fn handle(
             info!("Logged in as {}", data_about_bot.user.name);
         }
         FullEvent::Message { new_message } => {
-            if compile::message(ctx, new_message).await?
+            if compiler::message(ctx, new_message).await?
                 || new_members_mention::message(ctx, new_message).await?
                 || read_github_links::message(ctx, new_message).await
             {
