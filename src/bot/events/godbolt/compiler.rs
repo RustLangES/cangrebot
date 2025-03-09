@@ -1,4 +1,5 @@
 use std::sync::OnceLock;
+use color_eyre::owo_colors::OwoColorize;
 use poise::serenity_prelude::MESSAGE_CODE_LIMIT;
 use reqwest::{Client as HttpClient, Error as ReqwestError};
 use semver::Error as VersionError;
@@ -198,7 +199,11 @@ impl GodBoltCompilerOutput {
                 CompilationType::Assembly if self.is_success() => "x86asm",
                 _ => "ansi"
             },
-            actual_output,
+            if actual_output.is_empty() {
+                "<no output>".into()
+            } else {
+                actual_output
+            },
             warnings.join("\n")
         )
     }
