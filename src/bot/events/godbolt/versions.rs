@@ -14,6 +14,12 @@ impl OptionalVersion {
     pub fn trim_ver_from_len(&mut self) {
         self.extra_len -= self.to_string().len();
     }
+
+    pub fn is_none(&self) -> bool {
+        self.major.is_none() &&
+        self.minor.is_none() &&
+        self.patch.is_none()
+    }
 }
 
 impl From<&str> for OptionalVersion {
@@ -51,17 +57,10 @@ impl PartialEq for OptionalVersion {
 
 impl Ord for OptionalVersion {
     fn cmp(&self, other: &Self) -> Ordering {
-        let s_is_none =
-            self.major.is_none() &&
-            self.minor.is_none() &&
-            self.patch.is_none();
+        let s_is_none = self.is_none();
+        let o_is_none = other.is_none();
 
-        let o_is_none =
-            other.major.is_none() &&
-            other.minor.is_none() &&
-            other.patch.is_none();
-
-         if s_is_none && !o_is_none {
+        if s_is_none && !o_is_none {
             Ordering::Less
         } else if !s_is_none && o_is_none {
             Ordering::Greater
