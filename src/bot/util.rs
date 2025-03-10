@@ -1,3 +1,5 @@
+use poise::serenity_prelude::{Context, CreateMessage, Message};
+
 const MASKS: [(&str, &str); 4] = [
     ("github.com/", "github:"),
     ("gitlab.com/", "gitlab:"),
@@ -16,4 +18,32 @@ pub fn mask_url(url: String) -> String {
     }
 
     format!("[{masked}]({url})")
+}
+
+pub async fn send_multiple(
+    ctx: &Context,
+    caller: &Message,
+    msgs: Vec<String>,
+    mut reply: bool
+) {
+    for msg in msgs {
+        if reply {
+            caller
+                .reply(ctx, msg)
+                .await
+                .ok();
+
+            reply = false;
+        } else {
+            caller
+                .channel_id
+                .send_message(
+                    ctx,
+                    CreateMessage::new()
+                        .content(msg)
+                )
+                .await
+                .ok();
+        }
+    }
 }
