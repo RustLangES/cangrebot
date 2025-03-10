@@ -1,0 +1,30 @@
+# Ayuda del compilador de CangreBot
+Para leer este mensaje, concatenaste '--help' a cualquier comando bajo la sección '&code', en este caso '--help' cancela cualquier otra acción y la cambia por este menú.
+
+## Tipos de compilación
+- **`code asm`:** Este tipo de compilación te permite obtener el ensamblador de un código en cualquier lenguaje, si está disponible para ese compilador.
+- **`code run`:** Este tipo de compilación ejecuta el código especificado y te muestra su salida respondiendo a tu mensaje.
+
+El compilador de ejecución y de ensamblado son esencialmente el mismo, por lo que las opciones para compilar también.
+
+## Tipos de argumento
+Hay 2 tipos de argumento que puedes pasarle a esto.
+***Prefijados con `--compiler`:*** Este tipo de argumentos será interpretado por el bot de Discord, estos modificarán el comportamiento de este.
+
+> La sintaxis para argumentos de compilador es la siguiente: `--compiler-<argumento>=<valor>`.
+> 
+> Los argumentos prefijados con `--compiler` que tienes disponibles son los siguientes
+> - `--compiler-version`: Este argumento es una versión plana, puedes usar "" si el valor tiene espacios, las versiones `trunk` están filtradas debido a incompatibilidades comunes, de todos modos puedes seguir encontrando compiladores que no se comportan como deberían.
+> - `--compiler-arch`: Si está soportada, este argumento te permite cambiar la arquitectura del compilador, los nombres de arquitectura dependen en el compilador, es recomendado leer la [documentación de GodBolt](<https://github.com/compiler-explorer/compiler-explorer/blob/main/docs/API.md>). Una arquitectura bastante soportada es `amd64`.
+
+***Argumentos de compilador:*** Basicamente, cualquier argumento que no empiece por --compiler será directamente pasado al compilador de Godbolt para alterar la compilación; en el caso de Rust, pueden ser argumentos como `--debug` o `--release`.
+-# Ten en cuenta que argumentos que cambien rutas pueden romper la compilación.
+<sp>
+## Sintaxis general
+El comando se puede ejecutar como
+
+&code <tipo> [...argumentos]
+\`\`\`<lenguaje>
+<código>
+\`\`\`
+-# Caracteres adicionales al bloque de código no son soportados.

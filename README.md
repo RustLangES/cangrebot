@@ -26,3 +26,4 @@ cargo run
 -   [@danielsolartech](https://github.com/danielsolartech) - Contribuidor
 -   [@Phosphorus-M](https://github.com/Phosphorus-M) - Contribuidor
 -   [@SergioRibera](https://github.com/SergioRibera) - Contribuidor
+-   [@memw](https://github.com/stifskere) - Contribuidor
