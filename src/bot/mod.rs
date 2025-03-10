@@ -2,6 +2,8 @@ mod commands;
 mod events;
 mod util;
 
+use std::sync::Arc;
+
 use anyhow::anyhow;
 use poise::serenity_prelude::{futures::TryFutureExt, GuildId};
 use tracing::info;
@@ -29,7 +31,7 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
 
             event_handler: |ctx, event, framework, data| {
                 Box::pin(
-                    events::handle(ctx, event, framework, data)
+                    events::handle(ctx, event, framework, data, &data.secrets)
                         .inspect_err(|err| println!("{err:#}"))
                 )
             },

@@ -1,8 +1,8 @@
 use poise::serenity_prelude::{Context, Message};
 use super::godbolt::parse_args::{DiscordCompilerOutput, DiscordCompilerCommand};
 
-pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, String> {
-    if msg.author.bot || !msg.content.starts_with("&code") {
+pub async fn message(ctx: &Context, msg: &Message, prefix: &str) -> Result<bool, String> {
+    if msg.author.bot || !msg.content.starts_with(format!("{}code", prefix).as_str()) {
         return Ok(false);
     }
 
