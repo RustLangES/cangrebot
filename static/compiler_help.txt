@@ -9,7 +9,7 @@ The arguments passed to any of the compilation types do not matter, both are com
 
 **Argument Types**
 There is two argument type you can pass to this.
-***Prefixed with `--compiler`:*** these arguments will be interpreted by the discord bot, and modify it's behavior, there are only a few commands you have with this argument type but this is planned to be extended in a future.
+***Prefixed with `--compiler`:*** these arguments will be interpreted by the discord bot, and modify it's behavior.
 
 The sintaxis for this arguments is the following: `--compiler-<arg>=<value>`.
  
