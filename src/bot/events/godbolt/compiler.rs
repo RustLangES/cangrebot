@@ -1,11 +1,10 @@
 use std::sync::OnceLock;
-use color_eyre::owo_colors::OwoColorize;
 use poise::serenity_prelude::MESSAGE_CODE_LIMIT;
 use reqwest::{Client as HttpClient, Error as ReqwestError};
 use semver::Error as VersionError;
 use serde::Deserialize;
 use thiserror::Error;
-use super::{request::BaseCompilerRequest, response::CompilerResponse};
+use super::{request::BaseCompilerRequest, response::CompilerResponse, versions::OptionalVersion};
 
 #[derive(Error, Debug)]
 pub enum GodBoltError {
@@ -26,7 +25,7 @@ pub struct GodBoltCompiler {
     #[serde(rename(deserialize = "lang"))]
     language: String,
     #[serde(rename(deserialize = "semver"))]
-    version: String,
+    version: OptionalVersion,
     #[serde(rename(deserialize = "instructionSet"))]
     instruction_set: String,
     #[serde(rename(deserialize = "supportsBinary"))]
@@ -43,8 +42,8 @@ pub enum CompilationType {
 pub struct GodBoltCompilerOutput {
     output: String,
     is_success: bool,
-    version: String,
-    compiler: String,
+    version: OptionalVersion,
+    compiler_name: String,
     run_type: CompilationType
 }
 
@@ -57,12 +56,12 @@ impl GodBoltCompilerOutput {
         self.is_success
     }
 
-    pub fn version(&self) -> &str {
+    pub fn version(&self) -> &OptionalVersion {
         &self.version
     }
 
-    pub fn compiler(&self) -> &str {
-        &self.compiler
+    pub fn compiler_name(&self) -> &str {
+        &self.compiler_name
     }
 
     pub fn run_type(&self) -> &CompilationType {
@@ -71,7 +70,7 @@ impl GodBoltCompilerOutput {
 }
 
 impl GodBoltCompiler {
-    pub fn matches(&self, language: &str, version: Option<String>, ins_set: Option<String>) -> bool {
+    pub fn matches(&self, language: &str, version: Option<OptionalVersion>, ins_set: Option<String>) -> bool {
         if self.language.trim() != language.trim() {
             return false;
         }
@@ -80,12 +79,16 @@ impl GodBoltCompiler {
             if version_req != self.version {
                 return false;
             }
+        } else if !self.supports_binary || !self.supports_execute {
+            return false;
         }
 
         if let Some(ins_set_req) = ins_set {
             if self.instruction_set != ins_set_req {
                 return false;
             }
+        } else if !self.supports_binary || !self.supports_execute {
+            return false;
         }
 
         true
@@ -116,7 +119,7 @@ impl GodBoltCompiler {
                 false => response.aggregate_comp_out()
             },
             version: self.version.clone(),
-            compiler: self.name.clone(),
+            compiler_name: self.name.clone(),
             run_type: if execute {
                 CompilationType::Execution
             } else {
@@ -128,14 +131,14 @@ impl GodBoltCompiler {
 
 static AVAILABLE_COMPILERS: OnceLock<Vec<GodBoltCompiler>> = OnceLock::new();
 
-pub async fn fetch_compiler(language: &str, version: Option<String>, ins_set: Option<String>)
+pub async fn fetch_compiler(language: &str, version: Option<OptionalVersion>, ins_set: Option<String>)
     -> Result<Option<&GodBoltCompiler>, GodBoltError> {
     let available_compilers = match AVAILABLE_COMPILERS.get() {
         Some(compilers) => compilers,
         None => {
             let http_client = HttpClient::new();
 
-            let compilers = http_client
+            let mut compilers = http_client
                 .get("https://godbolt.org/api/compilers?fields=id,name,lang,semver,instructionSet,supportsBinary,supportsExecute")
                 .header("Accept", "application/json")
                 .send()
@@ -144,8 +147,12 @@ pub async fn fetch_compiler(language: &str, version: Option<String>, ins_set: Op
                 .json::<Vec<GodBoltCompiler>>()
                 .await?
                 .into_iter()
-                .filter(|api_comp| !api_comp.id.to_lowercase().contains("trunk"))
                 .collect::<Vec<_>>();
+
+            compilers.sort_by(|a, b| b
+                .version
+                .cmp(&a.version)
+            );
 
             AVAILABLE_COMPILERS.get_or_init(|| compilers)
         }
@@ -186,14 +193,20 @@ impl GodBoltCompilerOutput {
             );
         }
 
+        let vstr = self.version()
+            .to_string();
+        // hold it (I should re check this.)
+        let vstr = vstr
+            .as_str();
+
         format!(
             "**{}** ({}{})\n```{}\n{}```\n{}",
             if self.is_success() { "success" } else { "error" },
-            self.compiler(),
-            if self.compiler().contains(self.version()) {
+            self.compiler_name(),
+            if self.compiler_name().contains(vstr) {
                 "".into()
             } else {
-                format!(" {}", self.version())
+                format!(" {}", vstr)
             },
             match self.run_type() {
                 CompilationType::Assembly if self.is_success() => "x86asm",

@@ -63,12 +63,20 @@ impl TryFrom<String> for DiscordCompilerCommand {
         let compile_type = args
             .drain(..9)
             .as_str()
-            // hold it.
+        // hold it.
             .to_string();
+        // hold it.
+        let compile_type = compile_type
+            .split_once(" ");
 
-        let compile_type = match compile_type.as_str() {
-            "&code-run" => CompilationType::Execution,
-            "&code-asm" => CompilationType::Assembly,
+        let Some((_, compile_type)) = compile_type
+        else {
+            return Err(DiscordCompilerError::NoPrefix);
+        };
+
+        let compile_type = match compile_type {
+            "run" => CompilationType::Execution,
+            "asm" => CompilationType::Assembly,
             _ => return Err(DiscordCompilerError::NoPrefix)
         };
 
@@ -162,7 +170,8 @@ impl DiscordCompilerCommand {
                 &compiler_input.language,
                 compiler_input.bot_args
                     .get("version")
-                    .cloned(),
+                    .cloned()
+                    .map(|v| v.as_str().into()),
                 compiler_input.bot_args
                     .get("arch")
                     .cloned()

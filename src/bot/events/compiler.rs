@@ -2,11 +2,7 @@ use poise::serenity_prelude::{Context, Message};
 use super::godbolt::parse_args::{DiscordCompilerOutput, DiscordCompilerCommand};
 
 pub async fn message(ctx: &Context, msg: &Message) -> Result<bool, String> {
-    if
-        msg.author.bot ||
-        !msg.content.starts_with("&code-run") &&
-        !msg.content.starts_with("&code-asm")
-    {
+    if msg.author.bot || !msg.content.starts_with("&code") {
         return Ok(false);
     }
 
