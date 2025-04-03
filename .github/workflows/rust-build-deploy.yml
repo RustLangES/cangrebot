@@ -1,0 +1,47 @@
+name: Build and Deploy Rust Binary
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      REMOTE_USER: ${{ secrets.REMOTE_USER }}
+      REMOTE_HOST: ${{ secrets.REMOTE_HOST }}
+      REMOTE_PATH: ${{ secrets.REMOTE_PATH }}
+      PROGRAM_NAME: ${{ secrets.PROGRAM_NAME }}
+      
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build project
+        run: cargo build --release
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 400 ~/.ssh/id_rsa
+          ssh-keyscan -H $REMOTE_HOST >> ~/.ssh/known_hosts
+          echo "${{ secrets.KNOWN_HOSTS }}" >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
+
+      - name: Kill existing process
+        run: |
+          ssh $REMOTE_USER@$REMOTE_HOST "pgrep -f $PROGRAM_NAME && pkill -f $PROGRAM_NAME || echo 'No process to kill'" || true
+
+      - name: Copy binary to remote server
+        run: scp target/release/$PROGRAM_NAME $REMOTE_USER@$REMOTE_HOST:$REMOTE_PATH
+
+      - name: Set binary as executable
+        run: ssh $REMOTE_USER@$REMOTE_HOST "chmod +x $REMOTE_PATH/$PROGRAM_NAME"
+
+      - name: Launch new process
+        run: ssh $REMOTE_USER@$REMOTE_HOST "nohup $REMOTE_PATH/$PROGRAM_NAME > /dev/null 2>&1 &"
