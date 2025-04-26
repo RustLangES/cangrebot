@@ -3,9 +3,9 @@ use poise::serenity_prelude as serenity;
 use poise::serenity_prelude::{ChannelType, CreateAttachment, Message, OnlineStatus};
 use serde_json::{json, Value};
 use std::collections::{BTreeMap, HashMap};
-use std::fs::{self, File}; //para crear el archivo y leer contenido
-use std::io::Write; // para que en el archivo genere el texto en el json :v
-use std::path::Path; // para la ruta del archivo xd
+use std::fs::{self, File};
+use std::io::Write;
+use std::path::Path;
 ///muestra estadisticas del bot en Json
 #[poise::command(slash_command, prefix_command)]
 pub async fn server_info(
@@ -13,6 +13,7 @@ pub async fn server_info(
     #[description = "Reiniciar historial de mensajes anteriores"] reset: Option<bool>,
 ) -> Result<(), Error> {
     ctx.defer().await?;
+    let data = ctx.data();
     let guild_id = match ctx.guild_id() {
         Some(id) => id,
         None => {
@@ -21,14 +22,27 @@ pub async fn server_info(
         }
     };
 
+    let allowed_role_id = serenity::RoleId::from(data.secrets.id_server_stats);
+    let member = ctx
+        .author_member()
+        .await
+        .ok_or("No se pudo obtener el miembro")?;
+
+    let has_role = member.roles.iter().any(|r| r == &allowed_role_id);
+
+    if !has_role {
+        ctx.say("No tienes permiso para usar este comando 🚫")
+            .await?;
+        return Ok(());
+    }
+
     let http = ctx.serenity_context().http.clone();
     let guild = guild_id.to_partial_guild(&http).await?;
 
-    //para resetear los messsage
     if reset.unwrap_or(false) {
         let reset_path = Path::new("last_messages.json");
         if reset_path.exists() {
-            fs::remove_file(reset_path)?; // Borra el archivo viejo
+            fs::remove_file(reset_path)?;
         }
     }
 
@@ -81,13 +95,9 @@ pub async fn server_info(
         .created_at()
         .format("%Y-%m-%d %H:%M:%S")
         .to_string();
-    //let level_verificacion = format!("{:?}", guild.verification_level);
-    //let emojis = guild.emojis.len();
     let boots = guild.premium_subscription_count.unwrap_or(0);
-    let level_boost = format!("{:?}", guild.premium_tier);
     let features = guild.features.clone();
 
-    //miembros
     let mut messages_by_channel: HashMap<String, Vec<Value>> = HashMap::new();
 
     let last_ids_path = Path::new("last_messages.json");
@@ -139,7 +149,7 @@ pub async fn server_info(
             last_message_ids.insert(channel.name.clone(), oldest.id.to_string());
         }
     }
-    //miembros news :)
+
     let miembros = guild.members(&http, None, None).await?;
     let new_members: Vec<Value> = miembros
         .iter()
@@ -154,7 +164,6 @@ pub async fn server_info(
         })
         .collect();
 
-    //boosts del servidor
     let boosters: Vec<Value> = miembros
         .iter()
         .filter_map(|m: &serenity::Member| {
@@ -169,7 +178,6 @@ pub async fn server_info(
             }
         })
         .collect();
-    //envia los ultimos 100 mensajes del canal
 
     let stats = json!({
         "name": name,
@@ -178,9 +186,8 @@ pub async fn server_info(
         "total_roles": total_roles,
         "total_members": total_members,
         "active_members": active_members,
-        //"level_verificacion": level_verificacion,
         "boosts": boots,
-        "nivel_boost": level_boost,
+        "nivel_boost": boosters,
         "features": features,
         "created_at": created_at,
         "messages_by_channel": messages_by_channel,
@@ -188,12 +195,10 @@ pub async fn server_info(
         "boosters": boosters,
     });
 
-    //crea un archivo JSON "NO TOCAR"
     let file_path = Path::new("server_stats.json");
     let mut file = File::create(&file_path)?;
     write!(file, "{}", serde_json::to_string_pretty(&stats)?)?;
 
-    // paso final, envia el archivo en JSON
     let filename = "server_stats.json";
     let mut last_file = File::create("last_messages.json")?;
     write!(

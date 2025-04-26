@@ -1,5 +1,4 @@
 mod crate_docs;
-mod estadistica;
 mod explain;
 mod help;
 mod invite;
@@ -20,7 +19,6 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         krate::cargo(),
         ping::ping(),
         suggest::sugerencia(),
-        estadistica::stats(),
         stats::server_info(),
     ]
 }
