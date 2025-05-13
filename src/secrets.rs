@@ -13,8 +13,6 @@ pub struct CangrebotSecrets {
     pub discord_prefix: String,
     /// Discord Bot Token
     pub discord_token: String,
-    ///Variable de entorno de ID rol
-    pub id_server_stats: u64,
     /// Server id
     pub guild_id: u64,
 }
@@ -37,10 +35,6 @@ impl CangrebotSecrets {
                 "&".to_owned()
             }),
             discord_token: secrets("DISCORD_TOKEN").expect("'DISCORD_TOKEN' was not found"),
-            id_server_stats: secrets("ID_SERVER_STATS")
-                .expect("'ID_SERVER_STATS' was not found")
-                .parse()
-                .expect("can not parse ID_SERVER_STATS"),
             guild_id: secrets("GUILD_ID")
                 .expect("'GUILD_ID' was not found")
                 .parse()

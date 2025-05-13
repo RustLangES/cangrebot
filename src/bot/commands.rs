@@ -19,6 +19,6 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         krate::cargo(),
         ping::ping(),
         suggest::sugerencia(),
-        stats::server_info(),
+        stats::send_stats()
     ]
 }

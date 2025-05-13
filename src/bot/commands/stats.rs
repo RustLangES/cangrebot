@@ -1,220 +1,135 @@
+use crate::api::routes::send_stats::{send_stats_to_api, ServerStats};
 use crate::bot::{Context, Error};
-use poise::serenity_prelude as serenity;
-use poise::serenity_prelude::{ChannelType, CreateAttachment, Message, OnlineStatus};
+use anyhow::anyhow;
+use poise::serenity_prelude::{ChannelType, GetMessages, GuildId, Message, Timestamp};
 use serde_json::{json, Value};
-use std::collections::{BTreeMap, HashMap};
-use std::fs::{self, File};
-use std::io::Write;
-use std::path::Path;
-///muestra estadisticas del bot en Json
+use chrono::{Utc, Duration};
+
 #[poise::command(slash_command, prefix_command)]
-pub async fn server_info(
-    ctx: Context<'_>,
-    #[description = "Reiniciar historial de mensajes anteriores"] reset: Option<bool>,
-) -> Result<(), Error> {
+pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
-    let data = ctx.data();
-    let guild_id = match ctx.guild_id() {
-        Some(id) => id,
-        None => {
-            ctx.say("este comando se usa en server").await?;
-            return Ok(());
-        }
-    };
 
-    let allowed_role_id = serenity::RoleId::from(data.secrets.id_server_stats);
-    let member = ctx
-        .author_member()
+    // 1. Asegurarnos de que estamos en un guild
+    let guild_id: GuildId = ctx
+        .guild_id()
+        .ok_or_else(|| anyhow!("Este comando solo funciona en un servidor"))?;
+
+    // 2. Obtener PartialGuild con counts
+    let guild = guild_id
+        .to_partial_guild_with_counts(&ctx.http())
         .await
-        .ok_or("No se pudo obtener el miembro")?;
+        .map_err(|_| anyhow!("No se pudo obtener la info del servidor. Revisa permisos"))?;
 
-    let has_role = member.roles.iter().any(|r| r == &allowed_role_id);
+    // 3. Traer todos los canales
+    let channels = guild.channels(&ctx.http()).await?;
 
-    if !has_role {
-        ctx.say("No tienes permiso para usar este comando 🚫")
-            .await?;
-        return Ok(());
-    }
-
-    let http = ctx.serenity_context().http.clone();
-    let guild = guild_id.to_partial_guild(&http).await?;
-
-    if reset.unwrap_or(false) {
-        let reset_path = Path::new("last_messages.json");
-        if reset_path.exists() {
-            fs::remove_file(reset_path)?;
+    // ─────────────────────────────
+    // 4. Recopilar mensajes de texto
+    // ─────────────────────────────
+    let mut all_messages: Vec<Message> = Vec::new();
+    for channel in channels.values() {
+        if channel.kind == ChannelType::Text {
+            if let Ok(msgs) = channel
+                .messages(&ctx.http(), GetMessages::new().limit(100))
+                .await
+            {
+                all_messages.extend(msgs);
+            }
         }
     }
+    // Ordenar de más nuevo a más viejo y quedarnos con los 100 primeros
+    all_messages.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    let latest_100 = all_messages.into_iter().take(100).collect::<Vec<_>>();
 
-    let name = guild.name.clone();
-    let roles_names: Vec<String> = guild
-        .roles
-        .values()
-        .filter(|role| role.name != "@everyone")
-        .map(|role| role.name.clone())
+    let serialized_msgs: Vec<Value> = latest_100
+        .iter()
+        .map(|m| json!({
+            "id": m.id.to_string(),
+            "channel_id": m.channel_id.to_string(),
+            "author": {
+                "id": m.author.id.to_string(),
+                "name": m.author.name,
+            },
+            "content": m.content,
+            "timestamp": m.timestamp.to_string(),
+        }))
         .collect();
 
-    let channels = guild.channels(&http).await?;
-    let total_channels = channels
-        .values()
-        .filter(|channel| channel.kind != ChannelType::Category)
-        .count();
-    let total_roles = guild
-        .roles
-        .values()
-        .filter(|role| role.name != "@everyone")
-        .count();
+    // ─────────────────────────────
+    // 5. Capturar nuevos miembros del día
+    // ─────────────────────────────
+    let members = guild_id
+        .members(&ctx.http(), None, None)
+        .await
+        .map_err(|_| anyhow!("No se pudieron enumerar los miembros"))?;
 
-    let presences = ctx
-        .serenity_context()
-        .cache
-        .guild(guild_id)
-        .map(|guild| guild.presences.clone())
-        .unwrap_or_default();
-
-    let active_members = guild
-        .members(&http, None, None)
-        .await?
-        .iter()
-        .filter(|member| {
-            if let Some(presence) = presences.get(&member.user.id) {
-                matches!(
-                    presence.status,
-                    OnlineStatus::Online | OnlineStatus::Idle | OnlineStatus::DoNotDisturb
-                )
-            } else {
-                false
-            }
-        })
-        .count();
-
-    let total_members = guild.members(&http, None, None).await?.len();
-
-    let created_at = guild
-        .id
-        .created_at()
-        .format("%Y-%m-%d %H:%M:%S")
-        .to_string();
-    let boots = guild.premium_subscription_count.unwrap_or(0);
-    let features = guild.features.clone();
-
-    let mut messages_by_channel: HashMap<String, Vec<Value>> = HashMap::new();
-
-    let last_ids_path = Path::new("last_messages.json");
-    let mut last_message_ids: BTreeMap<String, String> = if last_ids_path.exists() {
-        let content = fs::read_to_string(last_ids_path)?;
-        serde_json::from_str(&content)?
-    } else {
-        BTreeMap::new()
-    };
-
-    for (channel_id, channel) in channels
-        .iter()
-        .map(|(id, ch)| (id as &serenity::ChannelId, ch))
-    {
-        if channel.kind != ChannelType::Text {
-            continue;
-        }
-
-        let get_messages = {
-            let mut builder = serenity::builder::GetMessages::default().limit(100);
-
-            if let Some(last_id) = last_message_ids.get(&channel.name) {
-                if let Ok(msg_id) = last_id.parse::<u64>() {
-                    builder = builder.before(serenity::MessageId::new(msg_id));
-                }
-            }
-
-            builder
-        };
-        let msgs = channel_id.messages(&http, get_messages).await?;
-        let extracted_msgs: Vec<Value> = msgs
-            .iter()
-            .filter(|msg| !msg.author.bot && msg.webhook_id.is_none())
-            .map(|msg: &Message| {
-                json!({
-                    "channel_id": channel_id.to_string(),
-                    "channel_name": channel.name.clone(),
-                    "user_id": msg.author.id.to_string(),
-                    "username": msg.author.name,
-                    "timestamp": msg.timestamp.format("%Y-%m-%d %H:%M:%S").to_string(),
-                    "content": msg.content
-                })
-            })
-            .collect();
-
-        messages_by_channel.insert(channel.name.clone(), extracted_msgs);
-
-        if let Some(oldest) = msgs.last() {
-            last_message_ids.insert(channel.name.clone(), oldest.id.to_string());
-        }
-    }
-
-    let miembros = guild.members(&http, None, None).await?;
-    let new_members: Vec<Value> = miembros
+    let today = Utc::now().date_naive();
+    let new_members: Vec<Value> = members
         .iter()
         .filter_map(|m| {
-            m.joined_at.map(|fecha| {
-                json!({
-                    "user_id": m.user.id.to_string(),
-                    "username": m.user.name,
-                    "joined_at": fecha.format("%Y-%m-%d %H:%M:%S").to_string()
-                })
+            m.joined_at.map(|dt| {
+                let date = dt.naive_utc().date();
+                (m, date)
             })
         })
+        .filter(|(_, date)| *date == today)
+        .map(|(m, date)| json!({
+            "id": m.user.id.to_string(),
+            "name": m.user.name.clone(),
+            "joined_at": date.to_string(),
+        }))
         .collect();
 
-    let boosters: Vec<Value> = miembros
-        .iter()
-        .filter_map(|m: &serenity::Member| {
-            if let Some(premium_since) = m.premium_since {
-                Some(json!({
-                    "user_id": m.user.id.to_string(),
-                    "username": m.user.name,
-                    "boosted_since": premium_since.format("%Y-%m-%d %H:%M:%S").to_string()
-                }))
-            } else {
-                None
-            }
-        })
+    // ─────────────────────────────
+    // 6. variable xd
+    // ─────────────────────────────
+
+    let members = guild_id
+        .members(&ctx.http(), Some(1000), None)
+        .await
+        .map_err(|_| anyhow!("No se pudieron enumerar los miembros"))?;
+
+    let now_chrono = chrono::Utc::now();
+    let threshold = Timestamp::from_unix_timestamp((now_chrono - chrono::Duration::hours(24)).timestamp())
+        .expect("Invalid timestamp");
+
+
+    let new_members: Vec<Value> = members
+        .into_iter()
+        .filter_map(|m| m.joined_at.map(|joined_at| (m, joined_at)))
+        .filter(|(_, joined_at)| *joined_at > threshold)
+        .map(|(m, joined_at)| json!({
+            "id": m.user.id.to_string(),
+            "name": m.user.name,
+            "joined_at": joined_at.to_string(),
+        }))
         .collect();
 
-    let stats = json!({
-        "name": name,
-        "roles_names": roles_names,
-        "total_channels": total_channels,
-        "total_roles": total_roles,
-        "total_members": total_members,
-        "active_members": active_members,
-        "boosts": boots,
-        "nivel_boost": boosters,
-        "features": features,
-        "created_at": created_at,
-        "messages_by_channel": messages_by_channel,
-        "new_members": new_members,
-        "boosters": boosters,
-    });
+    // ─────────────────────────────
+    // 7. Construir ServerStats y enviar
+    // ─────────────────────────────
+    let stats = ServerStats {
+        guild_id: guild_id.to_string(),
+        guild_name: guild.name.clone(),
+        total_members: guild.approximate_member_count.unwrap_or(0) as usize,
+        active_members: guild.approximate_presence_count.unwrap_or(0) as usize,
+        total_channels: channels.len(),
+        total_messages: latest_100.len() as u64,
+        daily_messages: 0,
+        monthly_messages: 0,
+        latest_messages: Some(serialized_msgs),
+        new_members: Some(new_members),
+    };
 
-    let file_path = Path::new("server_stats.json");
-    let mut file = File::create(&file_path)?;
-    write!(file, "{}", serde_json::to_string_pretty(&stats)?)?;
+    send_stats_to_api(stats.clone())
+        .await
+        .map_err(|e| anyhow!("Error al enviar las estadísticas: {}", e))?;
 
-    let filename = "server_stats.json";
-    let mut last_file = File::create("last_messages.json")?;
-    write!(
-        last_file,
-        "{}",
-        serde_json::to_string_pretty(&last_message_ids)?
-    )?;
-
-    ctx.send(
-        poise::CreateReply::default()
-            .content("📄 Info del server en Json:")
-            .attachment(CreateAttachment::bytes(
-                std::fs::read(&file_path)?,
-                filename,
-            )),
-    )
+    ctx.say(format!(
+        "✅ Estadísticas enviadas. Se incluyeron {} mensajes y {} nuevos miembros.",
+        stats.total_messages,
+        stats.new_members.as_ref().map_or(0, |v| v.len())
+    ))
     .await?;
 
     Ok(())
