@@ -56,7 +56,12 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
     let output_path = format!("/tmp/{}_welcome.png", member.user.name);
 
     gen_welcome::generate(
-        "./static/welcome_background.png",
+        &format!(
+            "{}/welcome_background.png",
+            std::env::var("STATIC_ROOT")
+                .as_deref()
+                .unwrap_or_else(|_| "static")
+        ),
         &avatar,
         &member.distinct(),
         guild_id

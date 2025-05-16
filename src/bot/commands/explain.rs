@@ -47,7 +47,12 @@ pub async fn explain(
     #[autocomplete = "autocomplete"]
     concepto: String,
 ) -> Result<(), bot::Error> {
-    let concepts_folder = PathBuf::from("static/rust-examples/docs");
+    let concepts_folder = PathBuf::from(format!(
+        "{}/rust-examples/docs",
+        std::env::var("STATIC_ROOT")
+            .as_deref()
+            .unwrap_or_else(|_| "static")
+    ));
 
     let concept = concepto.to_lowercase() + ".md";
     let concept = std::fs::read_to_string(concepts_folder.join(concept))
