@@ -1,0 +1,63 @@
+name: Create and Publish a Docker Image
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      attestations: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Set IMAGE_NAME
+        run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Login to the Container Registry
+        uses: docker/login-action@v2
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract Version and Build/Push Images
+        env:
+          REGISTRY: ${{ env.REGISTRY }}
+          IMAGE_NAME: ${{ env.IMAGE_NAME }}
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | cut -d'"' -f2)
+          IMG_NAME="${REGISTRY}/${IMAGE_NAME}"
+
+          echo "Building ${IMG_NAME}:${VERSION}"
+          nix build '.?submodules=1#image'
+          docker load <./result
+
+          echo "Publish '${VERSION}'"
+          docker tag "cangrebot:${VERSION}" "${IMG_NAME}:${VERSION}"
+          docker push "${IMG_NAME}:${VERSION}"
+
+          echo "Publish 'latest'"
+          docker tag "cangrebot:${VERSION}" "${IMG_NAME}:latest"
+          docker push "${IMG_NAME}:latest"
