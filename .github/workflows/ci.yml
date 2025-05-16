@@ -1,0 +1,35 @@
+name: Check Format and Code Quality
+on:
+  workflow_dispatch:
+  workflow_call:
+  pull_request:
+  push:
+    branches:
+      - main
+      - dev
+    paths:
+      - build.rs
+      - "**/**.rs"
+
+jobs:
+  check-fmt:
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: checks
+        run: |
+          cargo fmt --all --check
+
+  check-clippy:
+    needs: [check-fmt]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Checks
+        run: |
+          cargo clippy -- -D warnings
