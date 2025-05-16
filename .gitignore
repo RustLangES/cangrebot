@@ -1,4 +1,5 @@
 /target
+result
 Secrets*.toml
 .env
 .vscode

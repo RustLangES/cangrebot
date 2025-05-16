@@ -1,54 +1,45 @@
-let
-  inherit
-    (builtins)
-    currentSystem
-    fromJSON
-    readFile
-    ;
-  getFlake = name:
-    with (fromJSON (readFile ./flake.lock)).nodes.${name}.locked; {
-      inherit rev;
-      outPath = fetchTarball {
-        url = "https://github.com/${owner}/${repo}/archive/${rev}.tar.gz";
-        sha256 = narHash;
-      };
-    };
-in
-  {
-    system ? currentSystem,
-    pkgs ? import (getFlake "nixpkgs") {localSystem = {inherit system;};},
-    lib ? pkgs.lib,
-    crane,
-    cranix,
-    fenix,
-    ...
-  }: let
-    # fenix: rustup replacement for reproducible builds
-    toolchain = fenix.${system}.fromToolchainFile {
-      file = ./rust-toolchain.toml;
-      sha256 = "sha256-yMuSb5eQPO/bHv+Bcf/US8LVMbf/G/0MSfiPwBhiPpk=";
-    };
-    # crane: cargo and artifacts manager
-    craneLib = crane.${system}.overrideToolchain toolchain;
-    # cranix: extends crane building system with workspace bin building and Mold + Cranelift integrations
-    cranixLib = craneLib.overrideScope (cranix.${system}.craneOverride);
+{
+  pkgs ? import <nixpkgs> { },
+  ...
+}: let
+  toolchain = (pkgs.rust-bin.fromRustupToolchainFile ./rust-toolchain.toml);
+  cargoManifest = builtins.fromTOML (builtins.readFile ./Cargo.toml);
 
-    # buildInputs for Examples
-    buildInputs = with pkgs; [
-      openssl
-      libopus
-    ];
-  in {
-    # `nix develop`
-    devShells.default = cranixLib.devShell {
-      depsBuildBuild = [ pkgs.stdenv.cc ];
-      packages = with pkgs;
-        [
-          cmake
-          toolchain
-          pkg-config
-        ]
-        ++ buildInputs;
-      LD_LIBRARY_PATH = lib.makeLibraryPath buildInputs;
+  buildInputs = with pkgs; [
+    pkg-config
+    openssl
+    libopus
+  ];
+
+  appPkg = pkgs.rustPlatform.buildRustPackage {
+    pname = cargoManifest.package.name;
+    version = cargoManifest.package.version;
+    src = pkgs.lib.cleanSourceWith {
+      src = ./.;
+      filter = path: type:
+        (baseNameOf path) == "Cargo.lock"
+        || (pkgs.lib.hasSuffix ".rs" path)
+        || (pkgs.lib.hasSuffix ".toml" path)
+        || (pkgs.lib.hasInfix "crates" path)
+        || (pkgs.lib.hasInfix "src" path)
+        || (pkgs.lib.hasInfix "static/rust-examples" path)
+        || (pkgs.lib.hasInfix "static" path);
     };
-  }
+    cargoLock.lockFile = ./Cargo.lock;
+
+    inherit buildInputs;
+
+    OPENSSL_DIR = "${pkgs.openssl.dev}";
+    OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
+    OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include/";
+  };
+in {
+  # `nix run`
+  apps.default = appPkg;
+  # `nix build`
+  packages.default = appPkg;
+  # `nix develop`
+  devShells.default = pkgs.mkShell {
+    packages = [ toolchain ] ++ buildInputs;
+  };
+}
