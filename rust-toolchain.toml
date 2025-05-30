@@ -1,5 +1,4 @@
 [toolchain]
 channel = "stable"
 profile = "minimal"
-targets = ["wasm32-unknown-unknown"]
 components = ["rust-src", "rust-std"]

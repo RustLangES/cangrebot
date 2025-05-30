@@ -7,7 +7,6 @@
 
   buildInputs = with pkgs; [
     pkg-config
-    openssl
     libopus
   ];
 
@@ -30,10 +29,6 @@
     cargoLock.lockFile = ./Cargo.lock;
 
     inherit buildInputs;
-
-    OPENSSL_DIR = "${pkgs.openssl.dev}";
-    OPENSSL_LIB_DIR = "${pkgs.openssl.out}/lib";
-    OPENSSL_INCLUDE_DIR = "${pkgs.openssl.dev}/include/";
   };
 
   containerPkg = let
@@ -53,11 +48,6 @@
 
     contents = [ appPkg staticPkg ];
     config.Cmd = ["/bin/${name}"];
-
-    fakeRootCommands = "
-		  chmod 777 /bin/
-		  chmod 755 /bin/${name}
-		";
   };
 in {
   # `nix run`
