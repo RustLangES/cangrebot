@@ -48,11 +48,6 @@
 
     contents = [ appPkg staticPkg ];
     config.Cmd = ["/bin/${name}"];
-
-    fakeRootCommands = "
-		  chmod 777 /bin/
-		  chmod 755 /bin/${name}
-		";
   };
 in {
   # `nix run`
