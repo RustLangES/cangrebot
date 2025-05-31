@@ -9,6 +9,10 @@ pub struct CangrebotSecrets {
     pub channel_daily: u64,
     /// Channel id for Suggest
     pub channel_suggest: u64,
+    /// Waiting channel id for temporal voice chats
+    pub temporal_wait: u64,
+    /// Category id for temporal voice chats
+    pub temporal_category: u64,
     /// Prefix for text commands. Defaults to "&"
     pub discord_prefix: String,
     /// Discord Bot Token
@@ -30,6 +34,14 @@ impl CangrebotSecrets {
                 .expect("'CHANNEL_SUGGEST' was not found")
                 .parse()
                 .expect("Cannot parse 'CHANNEL_SUGGEST'"),
+            temporal_wait: secrets("TEMPORAL_WAIT")
+                .expect("'TEMPORAL_WAIT' was not found")
+                .parse()
+                .expect("Cannot parse 'TEMPORAL_WAIT'"),
+            temporal_category: secrets("TEMPORAL_CATEGORY")
+                .expect("'TEMPORAL_CATEGORY' was not found")
+                .parse()
+                .expect("Cannot parse 'TEMPORAL_CATEGORY'"),
             discord_prefix: secrets("DISCORD_PREFIX").unwrap_or_else(|_| {
                 warn!("'DISCORD_PREFIX' was not found. Defaults to \"&\"");
                 "&".to_owned()

@@ -2,8 +2,6 @@ mod commands;
 mod events;
 mod util;
 
-use std::sync::Arc;
-
 use anyhow::anyhow;
 use poise::serenity_prelude::{futures::TryFutureExt, GuildId};
 use tracing::info;
@@ -32,7 +30,7 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
             event_handler: |ctx, event, framework, data| {
                 Box::pin(
                     events::handle(ctx, event, framework, data, &data.secrets)
-                        .inspect_err(|err| println!("{err:#}"))
+                        .inspect_err(|err| println!("{err:#}")),
                 )
             },
 
@@ -57,6 +55,13 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
         })
         .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
+                events::temporal_voice::setup(
+                    ctx,
+                    &guild_id,
+                    data_secrets.temporal_category,
+                    data_secrets.temporal_wait,
+                )
+                .await;
                 let commands = &framework.options().commands;
                 poise::builtins::register_globally(ctx, commands).await?;
                 poise::builtins::register_in_guild(ctx, commands, guild_id).await?;
