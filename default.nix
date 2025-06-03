@@ -80,9 +80,22 @@
     contents = [ pkg staticPkg ];
     config.Cmd = ["/bin/${name}"];
   };
+
+  generatedMatrixJson = builtins.toJSON (pkgs.lib.flatten (map ({ arch, ... }:
+    { arch = arch; }
+  ) architectures));
 in {
   # `nix run`
-  apps.default = appPkg;
+  apps = {
+    default = appPkg;
+    matrix = {
+      type = "app";
+      program = toString (pkgs.writeScript "generate-matrix" ''
+        #!/bin/sh
+        echo '${generatedMatrixJson}'
+      '');
+    };
+  };
 
   # `nix build`
   packages = {
