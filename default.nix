@@ -61,7 +61,7 @@
 
   containerPkg = variant: let
     pkg = appPkg variant;
-    arch = if variant.arch == "x86_64" then "amd" else "arm";
+    # arch = if variant.arch == "x86_64" then "amd" else "arm";
     staticPkg = pkgs.stdenv.mkDerivation {
       name = "static-content";
       src = ./static;
@@ -75,7 +75,7 @@
     name = cargoManifest.package.name;
     tag = cargoManifest.package.version;
     created = "now";
-    architecture = "linux/${arch}64";
+    # architecture = "linux/${arch}64";
 
     contents = [ pkg staticPkg ];
     config.Cmd = ["/bin/${name}"];
