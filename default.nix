@@ -22,7 +22,7 @@
 
   architectures = [
     { arch = "x86_64"; target = "x86_64-unknown-linux-gnu"; }
-    { arch = "aarch64"; target = "aarch64-unknown-linux-gnu"; }
+    # { arch = "aarch64"; target = "aarch64-unknown-linux-gnu"; }
   ];
 
   buildInputs = with pkgs; [
