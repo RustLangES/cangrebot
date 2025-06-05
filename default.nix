@@ -107,6 +107,6 @@ in {
 
   # `nix develop`
   devShells.default = pkgs.mkShell {
-    packages = [ toolchain ] ++ buildInputs;
+    packages = [ (toolchain (systemToTarget system)) ] ++ buildInputs;
   };
 }
