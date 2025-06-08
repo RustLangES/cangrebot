@@ -35,12 +35,10 @@ pub async fn handle(
                 return Ok(());
             }
         }
-        FullEvent::MessageUpdate { new, .. } => {
-            let Some(msg) = new.as_ref() else {
-                return Ok(());
-            };
+        FullEvent::MessageUpdate { event, .. } => {
+            let msg = ctx.http.get_message(event.channel_id, event.id).await?;
 
-            if temporal_voice::message(ctx, msg, ChannelId::new(secrets.temporal_logs)).await? {
+            if temporal_voice::message(ctx, &msg, ChannelId::new(secrets.temporal_logs)).await? {
                 return Ok(());
             }
         }
