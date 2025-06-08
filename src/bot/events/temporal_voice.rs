@@ -1,8 +1,9 @@
 use std::sync::Arc;
 
 use poise::serenity_prelude::{
-    futures::future::join_all, prelude::TypeMapKey, ChannelId, ChannelType, Context, CreateChannel,
-    GuildChannel, GuildId, Member,
+    futures::future::join_all, prelude::TypeMapKey, ChannelId, ChannelType, Context,
+    CreateAllowedMentions, CreateChannel, CreateMessage, GuildChannel, GuildId, Member, Message,
+    PermissionOverwrite, PermissionOverwriteType, Permissions,
 };
 use tokio::sync::Mutex;
 
@@ -43,7 +44,7 @@ pub async fn setup(ctx: &Context, guild_id: &GuildId, category: u64, waiting: u6
         });
 
     join_all(futures).await;
-    let mut data = ctx.data.write().await;
+    let mut data = { ctx.data.write().await };
     data.insert::<TempVcStore>(channels_list);
 }
 
@@ -55,25 +56,38 @@ pub async fn temporal_voice_join(
 ) -> Result<(), bot::Error> {
     let mut channels_list: Vec<ChannelId> = vec![];
     let store_mutex = {
-        let data = ctx.data.read().await;
+        let data = { ctx.data.read().await };
         data.get::<TempVcStore>().cloned()
     };
 
     if store_mutex.is_some() {
-        channels_list = store_mutex.unwrap().lock().await.to_vec();
+        channels_list = { store_mutex.unwrap().lock().await }.to_vec();
     }
 
     let builder = CreateChannel::new(format!("🗣-&{}.vc()", member.user.name))
         .kind(ChannelType::Voice)
+        .rate_limit_per_user(5)
+        .permissions([PermissionOverwrite {
+            deny: Permissions::USE_EXTERNAL_STICKERS
+                | Permissions::USE_EXTERNAL_SOUNDS
+                | Permissions::USE_EXTERNAL_APPS
+                | Permissions::USE_EXTERNAL_EMOJIS,
+            allow: Permissions::empty(),
+            kind: PermissionOverwriteType::Role(guild_id.everyone_role()),
+        }])
         .category(category);
-    let Ok(temp_channel) = guild_id.create_channel(&ctx, builder).await else {
-        return Err(bot::Error::from("Error al crear el canal temporal"));
+    let temp_channel = guild_id.create_channel(&ctx, builder).await;
+    let Ok(temp_channel) = temp_channel else {
+        return Err(bot::Error::from(format!(
+            "Error al crear el canal temporal: {temp_channel:?}"
+        )));
     };
+
     let member_move = member.move_to_voice_channel(&ctx, &temp_channel).await;
 
     if member_move.is_ok() {
         channels_list.push(temp_channel.id);
-        let mut data = ctx.data.write().await;
+        let mut data = { ctx.data.write().await };
         data.insert::<TempVcStore>(Arc::new(Mutex::new(channels_list.clone())));
         return Ok(());
     } else {
@@ -86,12 +100,12 @@ pub async fn temporal_voice_join(
 pub async fn temporal_voice_quit(ctx: &Context, channel: &ChannelId) -> Result<(), bot::Error> {
     let mut channels_list: Vec<ChannelId> = vec![];
     let store_mutex = {
-        let data = ctx.data.read().await;
+        let data = { ctx.data.read().await };
         data.get::<TempVcStore>().cloned()
     };
 
     if store_mutex.is_some() {
-        channels_list = store_mutex.unwrap().lock().await.to_vec();
+        channels_list = { store_mutex.unwrap().lock().await }.to_vec();
     }
 
     let Ok(channel) = channel.to_channel(&ctx).await else {
@@ -106,18 +120,77 @@ pub async fn temporal_voice_quit(ctx: &Context, channel: &ChannelId) -> Result<(
 
     if channels_list.contains(&channel_guild.id) && channel_guild.members(&ctx).unwrap().len() == 0
     {
-        if let Ok(_) = channel_guild.delete(&ctx).await {
-            channels_list.remove(
-                channels_list
-                    .iter()
-                    .position(|cid| channel_guild.id == *cid)
-                    .unwrap(),
-            );
-            let mut data = ctx.data.write().await;
-            data.insert::<TempVcStore>(Arc::new(Mutex::new(channels_list.clone())));
-
-            return Ok(());
-        };
+        if let Err(e) = channel_guild.delete(&ctx).await {
+            return Err(bot::Error::from(format!(
+                "Error al eliminar canal temporal: {e}"
+            )));
+        }
+        channels_list.remove(
+            channels_list
+                .iter()
+                .position(|cid| channel_guild.id == *cid)
+                .unwrap(),
+        );
+        let mut data = { ctx.data.write().await };
+        data.insert::<TempVcStore>(Arc::new(Mutex::new(channels_list.clone())));
     }
-    return Err(bot::Error::from("Error al eliminar canal temporal"));
+    return Ok(());
+}
+
+pub async fn message(
+    ctx: &Context,
+    msg: &Message,
+    log_channel: ChannelId,
+) -> Result<bool, bot::Error> {
+    if msg.author.bot {
+        return Ok(false);
+    }
+
+    let store_mutex = {
+        let data = { ctx.data.read().await };
+        data.get::<TempVcStore>().cloned()
+    };
+
+    let mut channels_list: Vec<ChannelId> = vec![];
+    if let Some(store) = store_mutex.as_ref() {
+        let store = { store.lock().await };
+        channels_list = store.to_vec();
+    };
+
+    if channels_list.contains(&msg.channel_id) {
+        let message_builder = CreateMessage::new()
+            .content(format!(
+                "<t:{time}>\n{content}> {attachment}\nMessage Author: <@{author}>\nChannel: {channel}",
+                time = msg
+                    .edited_timestamp
+                    .unwrap_or_else(|| msg.timestamp)
+                    .timestamp(),
+                content = if msg.content.is_empty() {
+                    "".into()
+                } else {
+                    format!("> {}\n", msg.content)
+                },
+                attachment = msg
+                    .attachments
+                    .iter()
+                    .map(|a| a.url.clone())
+                    .collect::<Vec<_>>()
+                    .join("\n> "),
+                author = msg.author.id,
+                channel = msg.channel_id.name(&ctx).await?
+            ))
+            .sticker_ids(msg.sticker_items.iter().map(|s| s.id).collect::<Vec<_>>())
+            .allowed_mentions(
+                CreateAllowedMentions::new()
+                    .all_users(false)
+                    .all_users(false),
+            );
+        let Err(e) = log_channel.send_message(&ctx, message_builder).await else {
+            return Ok(true);
+        };
+        return Err(bot::Error::from(format!(
+            "Error al loggear mensaje del chat temporal: {e}"
+        )));
+    }
+    Ok(false)
 }

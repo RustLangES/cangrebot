@@ -29,7 +29,18 @@ pub async fn handle(
             if compiler::message(ctx, new_message, &secrets.discord_prefix).await?
                 || new_members_mention::message(ctx, new_message).await?
                 || read_github_links::message(ctx, new_message).await
+                || temporal_voice::message(ctx, new_message, ChannelId::new(secrets.temporal_logs))
+                    .await?
             {
+                return Ok(());
+            }
+        }
+        FullEvent::MessageUpdate { new, .. } => {
+            let Some(msg) = new.as_ref() else {
+                return Ok(());
+            };
+
+            if temporal_voice::message(ctx, msg, ChannelId::new(secrets.temporal_logs)).await? {
                 return Ok(());
             }
         }

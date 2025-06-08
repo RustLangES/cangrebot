@@ -13,6 +13,8 @@ pub struct CangrebotSecrets {
     pub temporal_wait: u64,
     /// Category id for temporal voice chats
     pub temporal_category: u64,
+    /// Channel id for temporal voice chat logs
+    pub temporal_logs: u64,
     /// Prefix for text commands. Defaults to "&"
     pub discord_prefix: String,
     /// Discord Bot Token
@@ -42,6 +44,10 @@ impl CangrebotSecrets {
                 .expect("'TEMPORAL_CATEGORY' was not found")
                 .parse()
                 .expect("Cannot parse 'TEMPORAL_CATEGORY'"),
+            temporal_logs: secrets("TEMPORAL_LOGS")
+                .expect("'TEMPORAL_LOGS' was not found")
+                .parse()
+                .expect("Cannot parse 'TEMPORAL_LOGS'"),
             discord_prefix: secrets("DISCORD_PREFIX").unwrap_or_else(|_| {
                 warn!("'DISCORD_PREFIX' was not found. Defaults to \"&\"");
                 "&".to_owned()
