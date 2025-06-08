@@ -1,12 +1,14 @@
 mod anti_spam;
 mod compiler;
+mod godbolt;
 mod join;
 mod new_members_mention;
 mod read_github_links;
-mod godbolt;
+pub mod temporal_voice;
 
-use poise::serenity_prelude::{Context, FullEvent, GuildId};
+use poise::serenity_prelude::{ChannelId, Context, FullEvent, GuildId};
 use poise::FrameworkContext;
+use temporal_voice::{temporal_voice_join, temporal_voice_quit};
 use tracing::info;
 
 use crate::bot::{self, Data};
@@ -17,7 +19,7 @@ pub async fn handle(
     event: &FullEvent,
     _: FrameworkContext<'_, Data, bot::Error>,
     data: &Data,
-    secrets: &CangrebotSecrets
+    secrets: &CangrebotSecrets,
 ) -> Result<(), bot::Error> {
     match event {
         FullEvent::Ready { data_about_bot, .. } => {
@@ -27,7 +29,16 @@ pub async fn handle(
             if compiler::message(ctx, new_message, &secrets.discord_prefix).await?
                 || new_members_mention::message(ctx, new_message).await?
                 || read_github_links::message(ctx, new_message).await
+                || temporal_voice::message(ctx, new_message, ChannelId::new(secrets.temporal_logs))
+                    .await?
             {
+                return Ok(());
+            }
+        }
+        FullEvent::MessageUpdate { event, .. } => {
+            let msg = ctx.http.get_message(event.channel_id, event.id).await?;
+
+            if temporal_voice::message(ctx, &msg, ChannelId::new(secrets.temporal_logs)).await? {
                 return Ok(());
             }
         }
@@ -44,6 +55,23 @@ pub async fn handle(
                 {
                     return Ok(());
                 }
+            }
+        }
+        FullEvent::VoiceStateUpdate { old, new } => {
+            let Some(guild_id) = &new.guild_id else {
+                return Ok(());
+            };
+            let Some(member) = &new.member else {
+                return Ok(());
+            };
+
+            if let Some(channel_id) = new.channel_id {
+                if channel_id == ChannelId::new(secrets.temporal_wait) {
+                    temporal_voice_join(ctx, &member, &guild_id, secrets.temporal_category).await?;
+                }
+            }
+            if let Some(old) = old {
+                temporal_voice_quit(ctx, &old.channel_id.unwrap()).await?;
             }
         }
         _ => {}
