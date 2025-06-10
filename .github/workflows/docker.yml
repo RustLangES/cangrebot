@@ -45,6 +45,8 @@ jobs:
       fail-fast: false
       matrix:
         include: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
 
     steps:
       - name: Checkout repository
@@ -63,6 +65,13 @@ jobs:
       - name: Set IMAGE_NAME
         run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
+      - name: Set VERSION
+        id: set-version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | cut -d'"' -f2)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
       - name: Login to the Container Registry
         uses: docker/login-action@v2
         with:
@@ -75,7 +84,6 @@ jobs:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          VERSION=$(grep '^version' Cargo.toml | cut -d'"' -f2)
           IMG_NAME="${REGISTRY}/${IMAGE_NAME}"
 
           echo "Building ${IMG_NAME}:${VERSION}"
@@ -93,6 +101,8 @@ jobs:
   update-remote:
     needs: [build-and-push-image]
     runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.build-and-push-image.outputs.version }}
     steps:
       - name: Install Kubectl
         run: |
@@ -120,5 +130,5 @@ jobs:
 
       - name: Update Remote Image
         run: |
-          kubectl set image "deployment/$NAMESPACE" bot="ghcr.io/$IMAGE_NAME:latest" -n "$NAMESPACE"
-          kubectl rollout status "deployment/$NAMESPACE" -n "$NAMESPACE" --timeout=180s
+          kubectl set image "deployment/$NAMESPACE" bot="ghcr.io/$IMAGE_NAME:$VERSION" -n "$NAMESPACE"
+          kubectl rollout status "deployment/$NAMESPACE" -n "$NAMESPACE" --timeout=10s
