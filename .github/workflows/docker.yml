@@ -90,25 +90,25 @@ jobs:
           docker tag "cangrebot:${VERSION}" "${IMG_NAME}:latest"
           docker push "${IMG_NAME}:latest"
 
-  apply-k8s:
+  apply-secrets:
     needs: [build-and-push-image]
-    uses: RustLangES/workflows/.github/workflows/setup-kubectl.yml@main
-    secrets:
-      host: ${{ secrets.KUBE_HOST }}
-      token: ${{ secrets.KUBE_TOKEN }}
-      certificate: ${{ secrets.KUBE_CERTIFICATE }}
-    with:
-      run: |
-        NAMESPACE="${GITHUB_REPOSITORY,,}"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Kubectl
+        run: |
+          bash <(curl -sL https://raw.githubusercontent.com/RustLangES/workflows/main/setup-kubectl.sh) -t "${{ secrets.KUBE_TOKEN }}" -c "${{ secrets.KUBE_CERTIFICATE }}" -h "${{ secrets.KUBE_HOST }}"
+      - name: Update Remote Secrets
+        run: |
+          NAMESPACE=$(echo "${{ github.repository }}" | cut -d'/' -f2)
 
-        kubectl create secret generic "$NAMESPACE-secrets" \
-          --namespace="$NAMESPACE" \
-          --from-literal=DISCORD_TOKEN="${{ secrets.DISCORD_TOKEN }}" \
-          --from-literal=GUILD_ID="${{ secrets.GUILD_ID }}" \
-          --from-literal=CHANNEL_DAILY="${{ secrets.CHANNEL_DAILY }}" \
-          --from-literal=CHANNEL_SUGGEST="${{ secrets.CHANNEL_SUGGEST }}" \
-          --from-literal=TEMPORAL_WAIT="${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" \
-          --from-literal=TEMPORAL_CATEGORY="${{ secrets.CANGREBOT_TEMP_CATEGORY }}" \
-          --from-literal=TEMPORAL_LOGS="${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" \
-          --from-literal=BOT_APIKEY="${{ secrets.CANGREBOT_APIKEY }}" \
-          --dry-run=client -o yaml | kubectl apply -f -
+          kubectl create secret generic "$NAMESPACE-secrets" \
+            --namespace="$NAMESPACE" \
+            --from-literal=DISCORD_TOKEN="${{ secrets.DISCORD_TOKEN }}" \
+            --from-literal=GUILD_ID="${{ secrets.GUILD_ID }}" \
+            --from-literal=CHANNEL_DAILY="${{ secrets.CHANNEL_DAILY }}" \
+            --from-literal=CHANNEL_SUGGEST="${{ secrets.CHANNEL_SUGGEST }}" \
+            --from-literal=TEMPORAL_WAIT="${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" \
+            --from-literal=TEMPORAL_CATEGORY="${{ secrets.CANGREBOT_TEMP_CATEGORY }}" \
+            --from-literal=TEMPORAL_LOGS="${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" \
+            --from-literal=BOT_APIKEY="${{ secrets.CANGREBOT_APIKEY }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
