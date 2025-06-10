@@ -89,3 +89,26 @@ jobs:
           echo "Publish 'latest'"
           docker tag "cangrebot:${VERSION}" "${IMG_NAME}:latest"
           docker push "${IMG_NAME}:latest"
+
+  apply-k8s:
+    needs: [build-and-push-image]
+    uses: RustLangES/workflows/.github/workflows/setup-kubectl.yml@main
+    secrets:
+      host: ${{ secrets.KUBE_HOST }}
+      token: ${{ secrets.KUBE_TOKEN }}
+      certificate: ${{ secrets.KUBE_CERTIFICATE }}
+    with:
+      run: |
+        NAMESPACE="${GITHUB_REPOSITORY,,}"
+
+        kubectl create secret generic "$NAMESPACE-secrets" \
+          --namespace="$NAMESPACE" \
+          --from-literal=DISCORD_TOKEN="${{ secrets.DISCORD_TOKEN }}" \
+          --from-literal=GUILD_ID="${{ secrets.GUILD_ID }}" \
+          --from-literal=CHANNEL_DAILY="${{ secrets.CHANNEL_DAILY }}" \
+          --from-literal=CHANNEL_SUGGEST="${{ secrets.CHANNEL_SUGGEST }}" \
+          --from-literal=TEMPORAL_WAIT="${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" \
+          --from-literal=TEMPORAL_CATEGORY="${{ secrets.CANGREBOT_TEMP_CATEGORY }}" \
+          --from-literal=TEMPORAL_LOGS="${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" \
+          --from-literal=BOT_APIKEY="${{ secrets.CANGREBOT_APIKEY }}" \
+          --dry-run=client -o yaml | kubectl apply -f -
