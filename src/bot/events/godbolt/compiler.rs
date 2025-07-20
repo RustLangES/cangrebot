@@ -1,10 +1,10 @@
-use std::sync::OnceLock;
+use super::{request::BaseCompilerRequest, response::CompilerResponse, versions::OptionalVersion};
 use poise::serenity_prelude::MESSAGE_CODE_LIMIT;
 use reqwest::{Client as HttpClient, Error as ReqwestError};
 use semver::Error as VersionError;
 use serde::Deserialize;
+use std::sync::OnceLock;
 use thiserror::Error;
-use super::{request::BaseCompilerRequest, response::CompilerResponse, versions::OptionalVersion};
 
 #[derive(Error, Debug)]
 pub enum GodBoltError {
@@ -15,7 +15,7 @@ pub enum GodBoltError {
     VersionParse(#[from] VersionError),
 
     #[error("The selected compiler doesn't support {0}")]
-    InvalidOperation(String)
+    InvalidOperation(String),
 }
 
 #[derive(Deserialize)]
@@ -31,12 +31,12 @@ pub struct GodBoltCompiler {
     #[serde(rename(deserialize = "supportsBinary"))]
     supports_binary: bool,
     #[serde(rename(deserialize = "supportsExecute"))]
-    supports_execute: bool
+    supports_execute: bool,
 }
 
 pub enum CompilationType {
     Assembly,
-    Execution
+    Execution,
 }
 
 pub struct GodBoltCompilerOutput {
@@ -44,7 +44,7 @@ pub struct GodBoltCompilerOutput {
     is_success: bool,
     version: OptionalVersion,
     compiler_name: String,
-    run_type: CompilationType
+    run_type: CompilationType,
 }
 
 impl GodBoltCompilerOutput {
@@ -70,7 +70,12 @@ impl GodBoltCompilerOutput {
 }
 
 impl GodBoltCompiler {
-    pub fn matches(&self, language: &str, version: Option<OptionalVersion>, ins_set: Option<String>) -> bool {
+    pub fn matches(
+        &self,
+        language: &str,
+        version: Option<OptionalVersion>,
+        ins_set: Option<String>,
+    ) -> bool {
         if self.language.trim() != language.trim() {
             return false;
         }
@@ -94,13 +99,18 @@ impl GodBoltCompiler {
         true
     }
 
-    pub async fn compile(&self, code: &str, user_args: &str, execute: bool) -> Result<GodBoltCompilerOutput, GodBoltError> {
+    pub async fn compile(
+        &self,
+        code: &str,
+        user_args: &str,
+        execute: bool,
+    ) -> Result<GodBoltCompilerOutput, GodBoltError> {
         if execute && !self.supports_execute {
             return Err(GodBoltError::InvalidOperation("execution".into()));
         }
 
         if !execute && !self.supports_binary {
-            return Err(GodBoltError::InvalidOperation("compilation".into()))
+            return Err(GodBoltError::InvalidOperation("compilation".into()));
         }
 
         let response = BaseCompilerRequest::gen_req(code, user_args, execute)
@@ -116,7 +126,7 @@ impl GodBoltCompiler {
             is_success,
             output: match is_success {
                 true => response.aggregate_run_out(),
-                false => response.aggregate_comp_out()
+                false => response.aggregate_comp_out(),
             },
             version: self.version.clone(),
             compiler_name: self.name.clone(),
@@ -124,15 +134,19 @@ impl GodBoltCompiler {
                 CompilationType::Execution
             } else {
                 CompilationType::Assembly
-            }
+            },
         })
     }
 }
 
 static AVAILABLE_COMPILERS: OnceLock<Vec<GodBoltCompiler>> = OnceLock::new();
 
-pub async fn fetch_compiler(language: &str, version: Option<OptionalVersion>, ins_set: Option<String>)
-    -> Result<Option<&GodBoltCompiler>, GodBoltError> {
+pub async fn fetch_compiler(
+    mut language: &str,
+    version: Option<OptionalVersion>,
+    ins_set: Option<String>,
+) -> Result<Option<&GodBoltCompiler>, GodBoltError> {
+    language = if language == "rs" { "rust" } else { language }; // Lo siento, hack sucio
     let available_compilers = match AVAILABLE_COMPILERS.get() {
         Some(compilers) => compilers,
         None => {
@@ -149,31 +163,20 @@ pub async fn fetch_compiler(language: &str, version: Option<OptionalVersion>, in
                 .into_iter()
                 .collect::<Vec<_>>();
 
-            compilers.sort_by(|a, b| b
-                .version
-                .cmp(&a.version)
-            );
+            compilers.sort_by(|a, b| b.version.cmp(&a.version));
 
             AVAILABLE_COMPILERS.get_or_init(|| compilers)
         }
     };
 
-    Ok(
-        available_compilers
-            .iter()
-            .find(|compiler| compiler.matches(
-                language,
-                version.clone(),
-                ins_set.clone()
-            ))
-    )
+    Ok(available_compilers
+        .iter()
+        .find(|compiler| compiler.matches(language, version.clone(), ins_set.clone())))
 }
 
 impl GodBoltCompilerOutput {
     pub fn as_discord_message(&self) -> String {
-        let mut actual_output = self
-            .output()
-            .to_string();
+        let mut actual_output = self.output().to_string();
         let mut warnings = Vec::new();
 
         if let CompilationType::Assembly = self.run_type() {
@@ -186,22 +189,23 @@ impl GodBoltCompilerOutput {
 
         // treshold for warnings.
         if actual_output.len() > (MESSAGE_CODE_LIMIT - 100) {
-            actual_output = actual_output[..1840]
-                .to_string();
+            actual_output = actual_output[..1840].to_string();
             warnings.push(
                 "**Warning:** The output was trimmed because the output is over 2000 characters long."
             );
         }
 
-        let vstr = self.version()
-            .to_string();
+        let vstr = self.version().to_string();
         // hold it (I should re check this.)
-        let vstr = vstr
-            .as_str();
+        let vstr = vstr.as_str();
 
         format!(
             "**{}** ({}{})\n```{}\n{}```\n{}",
-            if self.is_success() { "success" } else { "error" },
+            if self.is_success() {
+                "success"
+            } else {
+                "error"
+            },
             self.compiler_name(),
             if self.compiler_name().contains(vstr) {
                 "".into()
@@ -210,7 +214,7 @@ impl GodBoltCompilerOutput {
             },
             match self.run_type() {
                 CompilationType::Assembly if self.is_success() => "x86asm",
-                _ => "ansi"
+                _ => "ansi",
             },
             if actual_output.is_empty() {
                 "<no output>".into()
@@ -226,7 +230,7 @@ impl CompilationType {
     pub fn runs(&self) -> bool {
         match self {
             Self::Assembly => false,
-            Self::Execution => true
+            Self::Execution => true,
         }
     }
 }
