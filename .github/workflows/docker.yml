@@ -10,6 +10,29 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
+  generate-matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      matrix: ${{ steps.generate-matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+          github_access_token: ${{ secrets.GITHUB_TOKEN }}
+          extra_nix_config: |
+            experimental-features = nix-command flakes
+
+      - name: Generate matrix
+        id: generate-matrix
+        run: |
+          MATRIX=$(nix run .#matrix --quiet)
+          echo "Generated Matrix:"
+          echo "$MATRIX"
+          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
+
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
@@ -17,6 +40,13 @@ jobs:
       packages: write
       attestations: write
       id-token: write
+    needs: generate-matrix
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
+    outputs:
+      version: ${{ steps.set-version.outputs.version }}
 
     steps:
       - name: Checkout repository
@@ -35,6 +65,13 @@ jobs:
       - name: Set IMAGE_NAME
         run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
 
+      - name: Set VERSION
+        id: set-version
+        run: |
+          VERSION=$(grep '^version' Cargo.toml | cut -d'"' -f2)
+          echo "VERSION=${VERSION}" >> $GITHUB_ENV
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
       - name: Login to the Container Registry
         uses: docker/login-action@v2
         with:
@@ -42,16 +79,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract Version and Build/Push Images
+      - name: (${{ matrix.arch }}) Extract Version and Build/Push Images
         env:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
         run: |
-          VERSION=$(grep '^version' Cargo.toml | cut -d'"' -f2)
           IMG_NAME="${REGISTRY}/${IMAGE_NAME}"
 
           echo "Building ${IMG_NAME}:${VERSION}"
-          nix build '.?submodules=1#image'
+          nix build '.?submodules=1#image-${{ matrix.arch }}'
           docker load <./result
 
           echo "Publish '${VERSION}'"
@@ -61,3 +97,38 @@ jobs:
           echo "Publish 'latest'"
           docker tag "cangrebot:${VERSION}" "${IMG_NAME}:latest"
           docker push "${IMG_NAME}:latest"
+
+  update-remote:
+    needs: [build-and-push-image]
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.build-and-push-image.outputs.version }}
+    steps:
+      - name: Install Kubectl
+        run: |
+          bash <(curl -sL https://raw.githubusercontent.com/RustLangES/workflows/main/setup-kubectl.sh) -t "${{ secrets.KUBE_TOKEN }}" -c "${{ secrets.KUBE_CERTIFICATE }}" -h "${{ secrets.KUBE_HOST }}"
+
+      - name: Set ENV
+        run: |
+          NAMESPACE=$(echo "${{ github.repository }}" | cut -d'/' -f2)
+          echo "NAMESPACE=$NAMESPACE" >> $GITHUB_ENV
+          echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
+      - name: Update Remote Secrets
+        run: |
+          kubectl create secret generic "$NAMESPACE-secrets" \
+            --namespace="$NAMESPACE" \
+            --from-literal=DISCORD_TOKEN="${{ secrets.DISCORD_TOKEN }}" \
+            --from-literal=GUILD_ID="${{ secrets.GUILD_ID }}" \
+            --from-literal=CHANNEL_DAILY="${{ secrets.CHANNEL_DAILY }}" \
+            --from-literal=CHANNEL_SUGGEST="${{ secrets.CHANNEL_SUGGEST }}" \
+            --from-literal=TEMPORAL_WAIT="${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" \
+            --from-literal=TEMPORAL_CATEGORY="${{ secrets.CANGREBOT_TEMP_CATEGORY }}" \
+            --from-literal=TEMPORAL_LOGS="${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" \
+            --from-literal=BOT_APIKEY="${{ secrets.CANGREBOT_APIKEY }}" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Update Remote Image
+        run: |
+          kubectl set image "deployment/$NAMESPACE" bot="ghcr.io/$IMAGE_NAME:$VERSION" -n "$NAMESPACE"
+          kubectl rollout status "deployment/$NAMESPACE" -n "$NAMESPACE" --timeout=10s
