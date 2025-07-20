@@ -4,6 +4,7 @@ mod help;
 mod invite;
 mod krate;
 mod ping;
+mod selftimeout;
 mod stats;
 mod suggest;
 
@@ -19,6 +20,7 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         krate::cargo(),
         ping::ping(),
         suggest::sugerencia(),
-        stats::send_stats()
+        stats::send_stats(),
+        selftimeout::selftimeout(),
     ]
 }
