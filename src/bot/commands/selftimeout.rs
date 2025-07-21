@@ -12,7 +12,7 @@ pub async fn selftimeout(
         return Err(String::from("Failed to get author of command").into());
     };
 
-    let time = time.unwrap_or(1) as u16;
+    let time = time.unwrap_or(1u8);
 
     if time < 1 {
         let embed = CreateEmbed::new()
@@ -24,7 +24,7 @@ pub async fn selftimeout(
         return Ok(());
     }
 
-    let time_seconds: i64 = time as i64 * 3600 as i64;
+    let time_seconds = time as u64 * 3600;
 
     apply_timeout(&mut member.into_owned(), &ctx, time_seconds).await?;
 
@@ -49,7 +49,7 @@ fn help() -> String {
 pub async fn apply_timeout(
     member: &mut Member,
     ctx: &Context<'_>,
-    time_out_timer: i64,
+    time_out_timer: u64,
 ) -> Result<(), Error> {
     let time = Timestamp::now().unix_timestamp() + time_out_timer as i64;
     let time = Timestamp::from_unix_timestamp(time)?;
