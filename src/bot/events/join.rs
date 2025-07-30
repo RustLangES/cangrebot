@@ -5,6 +5,7 @@ use poise::serenity_prelude::{
 use std::convert::TryFrom;
 
 const DEFAULT_NEWER_ROLE: u64 = 1_263_861_260_932_485_194;
+const WELCOME_CHANNEL: u64 = 778_674_893_851_983_932_u64;
 
 const WELCOME_MESSAGE: &str = r"¡Bienvenidx a la Comunidad de RustLangES!
 
@@ -41,7 +42,7 @@ pub async fn guild_member_addition_event(ctx: &Context, guild_id: &GuildId, memb
 async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) -> Result<()> {
     let join_msg = "Bienvenid@ <mention> a <server>! Pásala lindo!".to_string();
 
-    let msg_channel = ChannelId::new(778_674_893_851_983_932_u64);
+    let msg_channel = ChannelId::new(WELCOME_CHANNEL);
 
     let join_msg_replaced = join_msg
         .replace("<mention>", &member.user.mention().to_string())
