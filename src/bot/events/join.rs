@@ -4,9 +4,10 @@ use poise::serenity_prelude::{
 };
 use std::convert::TryFrom;
 
-const DEFAULT_NEWER_ROLE: u64 = 1263861260932485194;
+const DEFAULT_NEWER_ROLE: u64 = 1_263_861_260_932_485_194;
+const WELCOME_CHANNEL: u64 = 778_674_893_851_983_932_u64;
 
-const WELCOME_MESSAGE: &str = r#"¡Bienvenidx a la Comunidad de RustLangES!
+const WELCOME_MESSAGE: &str = r"¡Bienvenidx a la Comunidad de RustLangES!
 
 Nos alegra que hayas decidido unirte a nuestra comunidad. Aquí encontrarás varios canales dedicados a diferentes aspectos de nuestra comunidad:
 
@@ -29,24 +30,24 @@ Recuerda revisar los mensajes fijados en cada canal para obtener más informaci�
 > **GitHub:** <https://github.com/RustLangES>
 > **Linkedin:** <https://www.linkedin.com/company/rustlanges>
 
-¡Bienvenidx una vez más y disfruta de tu estancia en nuestro servidor!"#;
+¡Bienvenidx una vez más y disfruta de tu estancia en nuestro servidor!";
 
-pub async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) {
-    if let Err(e) = _guild_member_addition(ctx, guild_id, member).await {
+pub async fn guild_member_addition_event(ctx: &Context, guild_id: &GuildId, member: &Member) {
+    if let Err(e) = guild_member_addition(ctx, guild_id, member).await {
         tracing::error!("Failed to handle welcome guild_member_addition: {}", e);
     }
 }
 
 #[tracing::instrument(skip(ctx))]
-async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) -> Result<()> {
+async fn guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Member) -> Result<()> {
     let join_msg = "Bienvenid@ <mention> a <server>! Pásala lindo!".to_string();
 
-    let msg_channel = ChannelId::new(778674893851983932_u64);
+    let msg_channel = ChannelId::new(WELCOME_CHANNEL);
 
     let join_msg_replaced = join_msg
         .replace("<mention>", &member.user.mention().to_string())
         .replace("<username>", &member.distinct())
-        .replace("<server>", &guild_id.name(ctx).unwrap_or_else(|| "".into()));
+        .replace("<server>", &guild_id.name(ctx).unwrap_or_default());
 
     // Download the user's avatar and create a welcome image
     let avatar_url = member.face();
@@ -58,15 +59,11 @@ async fn _guild_member_addition(ctx: &Context, guild_id: &GuildId, member: &Memb
     gen_welcome::generate(
         &format!(
             "{}/welcome_background.png",
-            std::env::var("STATIC_ROOT")
-                .as_deref()
-                .unwrap_or_else(|_| "static")
+            std::env::var("STATIC_ROOT").as_deref().unwrap_or("static")
         ),
         &avatar,
         &member.distinct(),
-        guild_id
-            .to_guild_cached(ctx)
-            .map(|g| g.member_count as usize),
+        guild_id.to_guild_cached(ctx).map(|g| g.member_count),
         include_bytes!("../../../static/fonts/WorkSans-Bold.ttf"),
         include_bytes!("../../../static/fonts/WorkSans-Regular.ttf"),
         &output_path,

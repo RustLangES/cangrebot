@@ -9,7 +9,7 @@ use crate::api::RouteState;
 use crate::serenity::builder::{CreateAllowedMentions, CreateForumPost, CreateMessage};
 use crate::serenity::model::prelude::ChannelId;
 
-const PARTICIPANT_ROLE: u64 = 1224238464958992495;
+const PARTICIPANT_ROLE: u64 = 1_224_238_464_958_992_495;
 
 #[derive(Deserialize, Serialize)]
 pub struct DailyChallengeRequest {

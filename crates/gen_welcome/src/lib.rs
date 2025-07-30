@@ -1,21 +1,29 @@
 use ab_glyph::{FontRef, PxScale};
 use image::imageops::overlay;
-use image::{GenericImage, GenericImageView, ImageBuffer, ImageError, Pixel, Rgba};
+use image::{GenericImage, GenericImageView, ImageBuffer, Pixel, Rgba};
+mod error;
+use error::GenWelcomeError;
 
 const FONT_SIZE: PxScale = PxScale { x: 36., y: 36. };
 
+/// # Errors
+///
+/// Will return Err in any of the following circumstances:
+/// - Fails to generate an image
+/// - Fails to load a font
+/// - Fails type conversion
 pub fn generate(
     bg: &str,
     avatar: &[u8],
     member_name: &str,
-    members: Option<usize>,
+    members: Option<u64>,
     bold_font: &[u8],
     regular_font: &[u8],
     out: &str,
-) -> Result<(), ImageError> {
+) -> Result<(), GenWelcomeError> {
     // Fonts
-    let bold = FontRef::try_from_slice(bold_font).expect("Cannot load bold font");
-    let regular = FontRef::try_from_slice(regular_font).expect("Cannot load regular font");
+    let bold = FontRef::try_from_slice(bold_font)?;
+    let regular = FontRef::try_from_slice(regular_font)?;
 
     let avatar = image::load_from_memory(avatar)?;
     let avatar = avatar.resize(256, 256, image::imageops::Lanczos3);
@@ -31,7 +39,7 @@ pub fn generate(
     imageproc::drawing::draw_text_mut(
         &mut background,
         Rgba([255, 255, 255, 255]),
-        ((w / 2) - (t1_x / 2)) as i32,
+        ((w / 2) - (t1_x / 2)).try_into()?,
         429,
         FONT_SIZE,
         &bold,
@@ -45,7 +53,7 @@ pub fn generate(
         imageproc::drawing::draw_text_mut(
             &mut background,
             Rgba([255, 255, 255, 255]),
-            ((w / 2) - (t2_x / 2)) as i32,
+            ((w / 2) - (t2_x / 2)).try_into()?,
             488,
             FONT_SIZE,
             &regular,
@@ -53,18 +61,18 @@ pub fn generate(
         );
     }
 
-    background.save(out)
+    Ok(background.save(out)?)
 }
 
 fn round<I: GenericImageView<Pixel = Rgba<u8>>>(avatar: &I) -> impl GenericImage<Pixel = Rgba<u8>> {
     let (width, height) = avatar.dimensions();
-    let radius = width as f32 / 2.0;
+    let radius = f64::from(width) / 2.0;
     let mut mask = ImageBuffer::new(width, height);
-    let center = (width as f32 / 2.0, height as f32 / 2.0);
+    let center = (f64::from(width) / 2.0, f64::from(height) / 2.0);
 
     for (x, y, pixel) in mask.enumerate_pixels_mut() {
-        let dx = x as f32 - center.0 + 0.5; // +0.5 para centrar el pixel
-        let dy = y as f32 - center.1 + 0.5;
+        let dx = f64::from(x) - center.0 + 0.5; // +0.5 para centrar el pixel
+        let dy = f64::from(y) - center.1 + 0.5;
         if dx.powi(2) + dy.powi(2) <= radius.powi(2) {
             *pixel = Rgba([255, 255, 255, 255]);
         } else {

@@ -5,13 +5,13 @@ use tracing::info;
 
 use crate::bot::util::mask_url;
 
-const MESSAGE: &str = r#"## [@crate_name@](https://crates.io/crates/@crate_name@)
+const MESSAGE: &str = r"## [@crate_name@](https://crates.io/crates/@crate_name@)
 @description@@keywords@
 
 @last_version@@stable_version@
 @doc@
 @repo@
-@web@"#;
+@web@";
 
 #[derive(Deserialize)]
 struct CratesIO {
@@ -113,21 +113,27 @@ pub async fn fetch_crate(client: &Client, crate_name: String) -> reqwest::Result
             "@doc@",
             &format!(
                 "Documentación: {}",
-                documentation.map(mask_url).as_deref().unwrap_or("None")
+                documentation
+                    .map(|s| mask_url(&s))
+                    .as_deref()
+                    .unwrap_or("None")
             ),
         )
         .replace(
             "@repo@",
             &format!(
                 "Repositorio: {}",
-                repository.map(mask_url).as_deref().unwrap_or("None")
+                repository
+                    .map(|s| mask_url(&s))
+                    .as_deref()
+                    .unwrap_or("None")
             ),
         )
         .replace(
             "@web@",
             &format!(
                 "Página Web: {}",
-                homepage.map(mask_url).as_deref().unwrap_or("None")
+                homepage.map(|s| mask_url(&s)).as_deref().unwrap_or("None")
             ),
         );
 

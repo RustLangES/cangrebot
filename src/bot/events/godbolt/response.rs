@@ -7,14 +7,14 @@ macro_rules! aggregate {
             .map(|entry| entry.text)
             .collect::<Vec<_>>()
             .join("\n")
-    }}
+    }};
 }
 
 #[derive(Deserialize)]
 #[serde(untagged)]
 pub enum CompilerResponse {
     AssemblyResponse(BaseAssemblyResponse),
-    RunResponse(BaseRunResponse)
+    RunResponse(BaseRunResponse),
 }
 
 #[derive(Deserialize)]
@@ -23,7 +23,7 @@ pub struct BaseAssemblyResponse {
     stdout: Vec<DataEntry>,
     stderr: Vec<DataEntry>,
     #[serde(rename(deserialize = "code"))]
-    exit_code: i32
+    exit_code: i32,
 }
 
 #[derive(Deserialize)]
@@ -33,7 +33,7 @@ pub struct BaseRunResponse {
     #[serde(rename(deserialize = "didExecute"))]
     did_run: bool,
     #[serde(rename(deserialize = "buildResult"))]
-    build_result: RunCompilerOutput
+    build_result: RunCompilerOutput,
 }
 
 #[derive(Deserialize)]
@@ -44,28 +44,28 @@ pub struct RunCompilerOutput {
 
 #[derive(Deserialize)]
 pub struct DataEntry {
-    text: String
+    text: String,
 }
 
 impl CompilerResponse {
     pub fn aggregate_run_out(self) -> String {
         match self {
             Self::AssemblyResponse(res) => res.aggregate_source(),
-            Self::RunResponse(res) => res.aggregate_run_out()
+            Self::RunResponse(res) => res.aggregate_run_out(),
         }
     }
 
     pub fn aggregate_comp_out(self) -> String {
         match self {
             Self::AssemblyResponse(res) => res.aggregate_comp_out(),
-            Self::RunResponse(res) => res.aggregate_comp_out()
+            Self::RunResponse(res) => res.aggregate_comp_out(),
         }
     }
 
     pub fn is_success(&self) -> bool {
         match self {
             Self::AssemblyResponse(res) => res.success(),
-            Self::RunResponse(res) => res.success()
+            Self::RunResponse(res) => res.success(),
         }
     }
 }

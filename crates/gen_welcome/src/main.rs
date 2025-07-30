@@ -16,7 +16,7 @@ fn main() {
         panic!("El nombre es necesario")
     };
     let Some(members) = args.next().map(|m| {
-        m.parse::<usize>()
+        m.parse::<u64>()
             .expect("No se pudo parsear la cantidad de miembros")
     }) else {
         panic!("La cantidad de miembros es necesario")

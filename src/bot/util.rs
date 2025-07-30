@@ -7,7 +7,7 @@ const MASKS: [(&str, &str); 4] = [
     ("crates.io/crates/", "crates:"),
 ];
 
-pub fn mask_url(url: String) -> String {
+pub fn mask_url(url: &str) -> String {
     let mut masked = url.replace("https://", "").replace("http://", "");
 
     for (mask, repl) in &MASKS {
@@ -20,28 +20,16 @@ pub fn mask_url(url: String) -> String {
     format!("[{masked}]({url})")
 }
 
-pub async fn send_multiple(
-    ctx: &Context,
-    caller: &Message,
-    msgs: Vec<String>,
-    mut reply: bool
-) {
+pub async fn send_multiple(ctx: &Context, caller: &Message, msgs: Vec<String>, mut reply: bool) {
     for msg in msgs {
         if reply {
-            caller
-                .reply(ctx, msg)
-                .await
-                .ok();
+            caller.reply(ctx, msg).await.ok();
 
             reply = false;
         } else {
             caller
                 .channel_id
-                .send_message(
-                    ctx,
-                    CreateMessage::new()
-                        .content(msg)
-                )
+                .send_message(ctx, CreateMessage::new().content(msg))
                 .await
                 .ok();
         }

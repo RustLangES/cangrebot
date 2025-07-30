@@ -1,33 +1,79 @@
-use lazy_static::lazy_static;
-use poise::serenity_prelude::{ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse, CreateInteractionResponseMessage, CreateMessage, Message, ReactionType, MESSAGE_CODE_LIMIT};
+use poise::serenity_prelude::{
+    ButtonStyle, ComponentInteraction, Context, CreateButton, CreateInteractionResponse,
+    CreateInteractionResponseMessage, CreateMessage, Message, ReactionType, MESSAGE_CODE_LIMIT,
+};
 use regex::{Captures, Regex};
 use reqwest::get;
 use std::collections::{HashMap, HashSet};
 use std::option::Option;
 
-lazy_static! {
-    static ref COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = HashMap::from([
-        ("c", "// {}"),
-        ("cpp", "// {}"),
-        ("cs", "// {}"),
-        ("java", "// {}"),
-        ("js", "// {}"),
-        ("go", "// {}"),
-        ("kt", "// {}"),
-        ("swift", "// {}"),
-        ("rs", "// {}"),
-        ("scala", "// {}"),
-        ("py", "# {}"),
-        ("sh", "# {}"),
-        ("pl", "# {}"),
-        ("rb", "# {}"),
-        ("r", "# {}"),
-        ("ps1", "# {}"),
-        ("php", "// {}"),
-        ("sql", "-- {}"),
-        ("html", "<!-- {} -->"),
-        ("xml", "<!-- {} -->"),
-        ("css", "/* {} */"),
+static COMMENT_TEMPLATES: std::sync::LazyLock<HashMap<&'static str, &'static str>> =
+    std::sync::LazyLock::new(|| {
+        HashMap::from([
+            ("c", "// {}"),
+            ("cpp", "// {}"),
+            ("cs", "// {}"),
+            ("java", "// {}"),
+            ("js", "// {}"),
+            ("go", "// {}"),
+            ("kt", "// {}"),
+            ("swift", "// {}"),
+            ("rs", "// {}"),
+            ("scala", "// {}"),
+            ("py", "# {}"),
+            ("sh", "# {}"),
+            ("pl", "# {}"),
+            ("rb", "# {}"),
+            ("r", "# {}"),
+            ("ps1", "# {}"),
+            ("php", "// {}"),
+            ("sql", "-- {}"),
+            ("html", "<!-- {} -->"),
+            ("xml", "<!-- {} -->"),
+            ("css", "/* {} */"),
+            ("lisp", "; {}"),
+            ("scm", "; {}"),
+            ("hs", "-- {}"),
+            ("m", "% {}"),
+            ("asm", "; {}"),
+            ("pro", "% {}"),
+            ("vim", "\" {}"),
+            ("ini", "; {}"),
+            ("jl", "# {}"),
+            ("erl", "% {}"),
+            ("ex", "# {}"),
+            ("lua", "-- {}"),
+            ("tcl", "# {}"),
+            ("yml", "# {}"),
+            ("md", "[comment]: # ({})"),
+            ("lhs", "-- {}"),
+        ])
+    });
+
+/*lazy_static! {
+static ref COMMENT_TEMPLATES: HashMap<&'static str, &'static str> = HashMap::from([
+    ("c", "// {}"),
+    ("cpp", "// {}"),
+    ("cs", "// {}"),
+    ("java", "// {}"),
+    ("js", "// {}"),
+    ("go", "// {}"),
+    ("kt", "// {}"),
+    ("swift", "// {}"),
+    ("rs", "// {}"),
+    ("scala", "// {}"),
+    ("py", "# {}"),
+    ("sh", "# {}"),
+    ("pl", "# {}"),
+    ("rb", "# {}"),
+    ("r", "# {}"),
+    ("ps1", "# {}"),
+    ("php", "// {}"),
+    ("sql", "-- {}"),
+    ("html", "<!-- {} -->"),
+    ("xml", "<!-- {} -->"),
+    ("css", "/* {} */
+"),
         ("lisp", "; {}"),
         ("scm", "; {}"),
         ("hs", "-- {}"),
@@ -45,12 +91,12 @@ lazy_static! {
         ("md", "[comment]: # ({})"),
         ("lhs", "-- {}"),
     ]);
-}
+}*/
 
 pub enum RangeOrIndex {
     Language(String),
-    Index(String, i32),
-    Range(String, i32, i32),
+    Index(String, usize),
+    Range(String, usize, usize),
 }
 
 fn parse_url(url: &str) -> Option<RangeOrIndex> {
@@ -68,18 +114,22 @@ fn parse_url(url: &str) -> Option<RangeOrIndex> {
     if let Some(caps) = range_regex.captures(url) {
         let start = caps
             .name("start")
-            .and_then(|m| m.as_str().parse::<i32>().ok());
+            .and_then(|m| m.as_str().parse::<usize>().ok());
         let end = caps
             .name("end")
-            .and_then(|m| m.as_str().parse::<i32>().ok());
+            .and_then(|m| m.as_str().parse::<usize>().ok());
 
         if end < start {
             return None;
         }
 
+        println!("{start:?} : {end:?}");
+
         match (start, end) {
-            (Some(start), Some(end)) => Some(RangeOrIndex::Range(language, start - 1, end)),
-            (Some(start), None) => Some(RangeOrIndex::Index(language, start - 1)),
+            (Some(start), Some(end)) => {
+                Some(RangeOrIndex::Range(language, start.saturating_sub(1), end))
+            }
+            (Some(start), None) => Some(RangeOrIndex::Index(language, start.saturating_sub(1))),
             (None, None) => Some(RangeOrIndex::Language(language)),
             _ => None,
         }
@@ -88,13 +138,13 @@ fn parse_url(url: &str) -> Option<RangeOrIndex> {
     }
 }
 
-fn trim_message(lang: String, content: String) -> String {
+fn trim_message(lang: &str, content: String) -> String {
     if content.len() > MESSAGE_CODE_LIMIT {
         content[0..MESSAGE_CODE_LIMIT - 200].to_string()
             + &*format!(
                 "\n{}",
                 COMMENT_TEMPLATES
-                    .get(&*lang)
+                    .get(lang)
                     .unwrap_or(&"// {}")
                     .replace("{}", "El mensaje fue cortado por limite de caracteres.")
             )
@@ -114,28 +164,28 @@ async fn read_message(link: String) -> Option<String> {
                 return match parsed {
                     RangeOrIndex::Language(language) => Some(format!(
                         "Mostrando <{link}>\n```{}\n{}\n```",
-                        language.to_owned(),
-                        trim_message(language, text)
+                        language.clone(),
+                        trim_message(&language, text)
                     )),
                     RangeOrIndex::Index(language, index) => {
-                        if index < subtext.len() as i32 {
+                        if index < subtext.len() {
                             Some(format!(
                                 "Mostrando linea {} de <{link}>\n```{}\n{}\n```",
                                 index + 1,
-                                language.to_owned(),
-                                trim_message(language, subtext[index as usize].to_string())
+                                language.clone(),
+                                trim_message(&language, subtext[index].to_string())
                             ))
                         } else {
                             None
                         }
                     }
                     RangeOrIndex::Range(language, start, end) => {
-                        if start < subtext.len() as i32 && end <= subtext.len() as i32 {
+                        if start < subtext.len() && end <= subtext.len() {
                             Some(format!(
                                 "Mostrando desde la linea {} hasta la linea {end} de <{link}>\n```{}\n{}\n```",
                                 start + 1,
-                                language.to_owned(),
-                                trim_message(language, subtext[start as usize..end as usize].join("\n"))
+                                language.clone(),
+                                trim_message(&language, subtext[start..end].join("\n"))
                             ))
                         } else {
                             None
@@ -172,7 +222,7 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
     let links = without_spaces
         .filter(|s| !s.starts_with('!') && s.starts_with("https://raw.githubusercontent.com/"));
 
-    let dup = HashSet::<&str>::from_iter(links);
+    let dup = links.collect::<HashSet<&str>>();
     for link in dup {
         if let Some(content) = read_message(link.to_string()).await {
             let message = CreateMessage::new()
@@ -181,31 +231,23 @@ pub async fn message(ctx: &Context, msg: &Message) -> bool {
                     CreateButton::new("delete_github_embed")
                         .label("Borrar")
                         .style(ButtonStyle::Danger)
-                        .emoji(ReactionType::try_from("🗑️").unwrap())
+                        .emoji(ReactionType::try_from("🗑️").unwrap()),
                 )
                 .button(
                     CreateButton::new("save_github_embed")
                         .label("Guardar")
                         .style(ButtonStyle::Secondary)
-                        .emoji(ReactionType::try_from("💾").unwrap())
+                        .emoji(ReactionType::try_from("💾").unwrap()),
                 );
 
             if let Some(reference) = &msg.message_reference {
                 msg.channel_id
-                    .send_message(
-                        &ctx,
-                        message
-                            .reference_message(reference.clone())
-                    )
+                    .send_message(&ctx, message.reference_message(reference.clone()))
                     .await
                     .unwrap();
             } else {
                 msg.channel_id
-                    .send_message(
-                        &ctx,
-                        message
-                            .reference_message(msg)
-                    )
+                    .send_message(&ctx, message.reference_message(msg))
                     .await
                     .unwrap();
             }
@@ -220,15 +262,20 @@ pub async fn handle_delete_embed(ctx: &Context, interaction: &ComponentInteracti
         return false;
     }
 
-    if interaction.message.mentions.first().map(|m| m.id != interaction.user.id).unwrap_or(true)  {
+    if interaction
+        .message
+        .mentions
+        .first()
+        .is_none_or(|m| m.id != interaction.user.id)
+    {
         interaction
             .create_response(
                 ctx,
                 CreateInteractionResponse::Message(
                     CreateInteractionResponseMessage::new()
                         .ephemeral(true)
-                        .content("El bloque de codigo no era para ti.")
-                )
+                        .content("El bloque de codigo no era para ti."),
+                ),
             )
             .await
             .ok();
@@ -236,9 +283,7 @@ pub async fn handle_delete_embed(ctx: &Context, interaction: &ComponentInteracti
         return true;
     }
 
-    interaction.message.delete(&ctx)
-        .await
-        .ok();
+    interaction.message.delete(&ctx).await.ok();
 
     true
 }
@@ -252,39 +297,34 @@ pub async fn handle_save_embed(ctx: &Context, interaction: &ComponentInteraction
         .user
         .dm(
             ctx,
-            CreateMessage::new()
-                .content(
-                    interaction
-                        .message
-                        .content
-                        .clone()
-                        .replacen("Mostrando", "El codigo que solicitaste:", 1)
-                )
+            CreateMessage::new().content(interaction.message.content.clone().replacen(
+                "Mostrando",
+                "El codigo que solicitaste:",
+                1,
+            )),
         )
         .await;
 
     match send_result {
-        Ok(_) => interaction
-            .create_response(
-                ctx,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content("Enviado. Revisa tus mensajes directos con el bot.")
-                        .ephemeral(true)
-                )
+        Ok(_) => interaction.create_response(
+            ctx,
+            CreateInteractionResponse::Message(
+                CreateInteractionResponseMessage::new()
+                    .content("Enviado. Revisa tus mensajes directos con el bot.")
+                    .ephemeral(true),
             ),
-        Err(err) => interaction
-            .create_response(
-                ctx,
-                CreateInteractionResponse::Message(
-                    CreateInteractionResponseMessage::new()
-                        .content(format!("Error: {err}"))
-                        .ephemeral(true)
-                )
-            )
+        ),
+        Err(err) => interaction.create_response(
+            ctx,
+            CreateInteractionResponse::Message(
+                CreateInteractionResponseMessage::new()
+                    .content(format!("Error: {err}"))
+                    .ephemeral(true),
+            ),
+        ),
     }
-        .await
-        .ok();
+    .await
+    .ok();
 
-    return true;
+    true
 }

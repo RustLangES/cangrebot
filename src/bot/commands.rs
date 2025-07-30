@@ -13,14 +13,15 @@ use super::{Data, Error};
 pub fn commands() -> Vec<poise::Command<Data, Error>> {
     vec![
         crate_docs::docs(),
-        crate_docs::crate_docs(),
         explain::explain(),
         help::help(),
         invite::invite(),
         krate::cargo(),
         ping::ping(),
-        suggest::sugerencia(),
-        stats::send_stats(),
+        suggest::new::sugerencia(),
+        suggest::implemented::sugerencia_implementada(),
+        suggest::cancelled::sugerencia_cancelada(),
+        //stats::send_stats(), TODO: Removed for now
         selftimeout::selftimeout(),
     ]
 }

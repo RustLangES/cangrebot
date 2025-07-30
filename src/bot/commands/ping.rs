@@ -11,12 +11,12 @@ pub async fn ping(ctx: Context<'_>) -> Result<(), Error> {
 
     let latency: u128 = start.elapsed().as_millis();
 
-    let mensaje: String = format!("📡 Latencia: `{}` ms", latency);
+    let mensaje: String = format!("📡 Latencia: `{latency}` ms");
 
     let embed = CreateEmbed::new()
         .title("🏓 Pong!")
         .description(mensaje)
-        .color(0xEA9010);
+        .color(0x00EA_9010);
 
     let replay = CreateReply::default();
 

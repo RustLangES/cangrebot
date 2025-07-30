@@ -1,5 +1,8 @@
-use std::cmp::Ordering;
 use serde::{Deserialize, Deserializer};
+use std::{
+    cmp::Ordering,
+    fmt::{Display, Error},
+};
 
 #[derive(Eq, PartialOrd, Clone)]
 pub struct OptionalVersion {
@@ -7,7 +10,7 @@ pub struct OptionalVersion {
     minor: Option<i32>,
     patch: Option<i32>,
 
-    extra_len: usize
+    extra_len: usize,
 }
 
 impl OptionalVersion {
@@ -16,9 +19,7 @@ impl OptionalVersion {
     }
 
     pub fn is_none(&self) -> bool {
-        self.major.is_none() &&
-        self.minor.is_none() &&
-        self.patch.is_none()
+        self.major.is_none() && self.minor.is_none() && self.patch.is_none()
     }
 }
 
@@ -29,9 +30,7 @@ impl From<&str> for OptionalVersion {
         let mut patch = None;
 
         for word in value.split_whitespace().rev() {
-            let mut parts = word
-                .split('.')
-                .filter_map(|s| s.parse::<i32>().ok());
+            let mut parts = word.split('.').filter_map(|s| s.parse::<i32>().ok());
 
             if let Some(m) = parts.next() {
                 major = Some(m);
@@ -41,7 +40,12 @@ impl From<&str> for OptionalVersion {
             }
         }
 
-        let mut value = Self { major, minor, patch, extra_len: value.len() };
+        let mut value = Self {
+            major,
+            minor,
+            patch,
+            extra_len: value.len(),
+        };
         value.trim_ver_from_len();
         value
     }
@@ -49,12 +53,13 @@ impl From<&str> for OptionalVersion {
 
 impl PartialEq for OptionalVersion {
     fn eq(&self, other: &Self) -> bool {
-        self.major.filter(|m| m != &0) == other.major.filter(|m| m != &0) &&
-        self.minor.filter(|m| m != &0) == other.minor.filter(|m| m != &0) &&
-        self.patch.filter(|p| p != &0) == other.patch.filter(|p| p != &0)
+        self.major.filter(|m| m != &0) == other.major.filter(|m| m != &0)
+            && self.minor.filter(|m| m != &0) == other.minor.filter(|m| m != &0)
+            && self.patch.filter(|p| p != &0) == other.patch.filter(|p| p != &0)
     }
 }
 
+#[allow(clippy::derive_ord_xor_partial_ord)]
 impl Ord for OptionalVersion {
     fn cmp(&self, other: &Self) -> Ordering {
         let s_is_none = self.is_none();
@@ -71,12 +76,8 @@ impl Ord for OptionalVersion {
         } else {
             self.major
                 .cmp(&other.major)
-                .then_with(|| self.minor
-                    .cmp(&other.minor)
-                )
-                .then_with(|| self.patch
-                    .cmp(&other.patch)
-                )
+                .then_with(|| self.minor.cmp(&other.minor))
+                .then_with(|| self.patch.cmp(&other.patch))
         }
     }
 }
@@ -88,13 +89,26 @@ impl<'de> Deserialize<'de> for OptionalVersion {
     }
 }
 
-impl ToString for OptionalVersion {
+/*impl ToString for OptionalVersion {
     fn to_string(&self) -> String {
         match (self.major, self.minor, self.patch) {
-            (Some(major), Some(minor), Some(patch)) => format!("{}.{}.{}", major, minor, patch),
-            (Some(major), Some(minor), None) => format!("{}.{}", major, minor),
-            (Some(major), None, None) => format!("{}", major),
-            _ => String::new()
+            (Some(major), Some(minor), Some(patch)) => format!("{major}.{minor}.{patch}"),
+            (Some(major), Some(minor), None) => format!("{major}.{minor}"),
+            (Some(major), None, None) => format!("{major}"),
+            _ => String::new(),
+        }
+    }
+}*/
+
+impl Display for OptionalVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match (self.major, self.minor, self.patch) {
+            (Some(major), Some(minor), Some(patch)) => {
+                write!(f, "{major}.{minor}.{patch}")
+            }
+            (Some(major), Some(minor), None) => write!(f, "{major}.{minor}"),
+            (Some(major), None, None) => write!(f, "{major}"),
+            _ => Err(Error),
         }
     }
 }

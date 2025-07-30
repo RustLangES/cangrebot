@@ -124,9 +124,10 @@ impl GodBoltCompiler {
 
         Ok(GodBoltCompilerOutput {
             is_success,
-            output: match is_success {
-                true => response.aggregate_run_out(),
-                false => response.aggregate_comp_out(),
+            output: if is_success {
+                response.aggregate_run_out()
+            } else {
+                response.aggregate_comp_out()
             },
             version: self.version.clone(),
             compiler_name: self.name.clone(),
@@ -147,26 +148,25 @@ pub async fn fetch_compiler(
     ins_set: Option<String>,
 ) -> Result<Option<&GodBoltCompiler>, GodBoltError> {
     language = if language == "rs" { "rust" } else { language }; // Lo siento, hack sucio
-    let available_compilers = match AVAILABLE_COMPILERS.get() {
-        Some(compilers) => compilers,
-        None => {
-            let http_client = HttpClient::new();
+    let available_compilers = if let Some(compilers) = AVAILABLE_COMPILERS.get() {
+        compilers
+    } else {
+        let http_client = HttpClient::new();
 
-            let mut compilers = http_client
-                .get("https://godbolt.org/api/compilers?fields=id,name,lang,semver,instructionSet,supportsBinary,supportsExecute")
-                .header("Accept", "application/json")
-                .send()
-                .await?
-                .error_for_status()?
-                .json::<Vec<GodBoltCompiler>>()
-                .await?
-                .into_iter()
-                .collect::<Vec<_>>();
+        let mut compilers = http_client
+            .get("https://godbolt.org/api/compilers?fields=id,name,lang,semver,instructionSet,supportsBinary,supportsExecute")
+            .header("Accept", "application/json")
+            .send()
+            .await?
+            .error_for_status()?
+            .json::<Vec<GodBoltCompiler>>()
+            .await?
+            .into_iter()
+            .collect::<Vec<_>>();
 
-            compilers.sort_by(|a, b| b.version.cmp(&a.version));
+        compilers.sort_by(|a, b| b.version.cmp(&a.version));
 
-            AVAILABLE_COMPILERS.get_or_init(|| compilers)
-        }
+        AVAILABLE_COMPILERS.get_or_init(|| compilers)
     };
 
     Ok(available_compilers
@@ -208,9 +208,9 @@ impl GodBoltCompilerOutput {
             },
             self.compiler_name(),
             if self.compiler_name().contains(vstr) {
-                "".into()
+                String::new()
             } else {
-                format!(" {}", vstr)
+                format!(" {vstr}")
             },
             match self.run_type() {
                 CompilationType::Assembly if self.is_success() => "x86asm",

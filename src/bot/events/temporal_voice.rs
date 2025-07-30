@@ -31,7 +31,7 @@ pub async fn setup(ctx: &Context, guild_id: &GuildId, category: u64, waiting: u6
             {
                 let list_ref = Arc::clone(&list_ref);
                 Some(async move {
-                    if channel.members(&ctx).is_ok_and(|m| m.len() == 0) {
+                    if channel.members(ctx).is_ok_and(|c| c.is_empty()) {
                         let _ = channel.delete(&ctx).await;
                     } else {
                         let mut lock = list_ref.lock().await;
@@ -90,11 +90,10 @@ pub async fn temporal_voice_join(
         let mut data = { ctx.data.write().await };
         data.insert::<TempVcStore>(Arc::new(Mutex::new(channels_list.clone())));
         return Ok(());
-    } else {
-        return Err(bot::Error::from(
-            "Error al mover al miembro al canal temporal",
-        ));
     }
+    Err(bot::Error::from(
+        "Error al mover al miembro al canal temporal",
+    ))
 }
 
 pub async fn temporal_voice_quit(ctx: &Context, channel: &ChannelId) -> Result<(), bot::Error> {
@@ -118,8 +117,7 @@ pub async fn temporal_voice_quit(ctx: &Context, channel: &ChannelId) -> Result<(
         ));
     };
 
-    if channels_list.contains(&channel_guild.id) && channel_guild.members(&ctx).unwrap().len() == 0
-    {
+    if channels_list.contains(&channel_guild.id) && channel_guild.members(ctx).unwrap().is_empty() {
         if let Err(e) = channel_guild.delete(&ctx).await {
             return Err(bot::Error::from(format!(
                 "Error al eliminar canal temporal: {e}"
@@ -134,7 +132,7 @@ pub async fn temporal_voice_quit(ctx: &Context, channel: &ChannelId) -> Result<(
         let mut data = { ctx.data.write().await };
         data.insert::<TempVcStore>(Arc::new(Mutex::new(channels_list.clone())));
     }
-    return Ok(());
+    Ok(())
 }
 
 pub async fn message(
@@ -155,7 +153,7 @@ pub async fn message(
     if let Some(store) = store_mutex.as_ref() {
         let store = { store.lock().await };
         channels_list = store.to_vec();
-    };
+    }
 
     if channels_list.contains(&msg.channel_id) {
         let message_builder = CreateMessage::new()
@@ -163,10 +161,10 @@ pub async fn message(
                 "<t:{time}>\n{content}> {attachment}\nMessage Author: <@{author}>\nChannel: {channel}",
                 time = msg
                     .edited_timestamp
-                    .unwrap_or_else(|| msg.timestamp)
+                    .unwrap_or(msg.timestamp)
                     .timestamp(),
                 content = if msg.content.is_empty() {
-                    "".into()
+                    String::new()
                 } else {
                     format!("> {}\n", msg.content)
                 },

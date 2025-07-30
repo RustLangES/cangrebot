@@ -49,9 +49,7 @@ pub async fn explain(
 ) -> Result<(), bot::Error> {
     let concepts_folder = PathBuf::from(format!(
         "{}/rust-examples/docs",
-        std::env::var("STATIC_ROOT")
-            .as_deref()
-            .unwrap_or_else(|_| "static")
+        std::env::var("STATIC_ROOT").as_deref().unwrap_or("static")
     ));
 
     let concept = concepto.to_lowercase() + ".md";
