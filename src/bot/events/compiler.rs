@@ -1,10 +1,10 @@
-use poise::serenity_prelude::{Context, Message};
 use crate::bot::util::send_multiple;
+use poise::serenity_prelude::{Context, Message};
 
-use super::godbolt::parse_args::{DiscordCompilerOutput, DiscordCompilerCommand};
+use super::godbolt::parse_args::{DiscordCompilerCommand, DiscordCompilerOutput};
 
 pub async fn message(ctx: &Context, msg: &Message, prefix: &str) -> Result<bool, String> {
-    if msg.author.bot || !msg.content.starts_with(format!("{}code", prefix).as_str()) {
+    if msg.author.bot || !msg.content.starts_with(format!("{prefix}code").as_str()) {
         return Ok(false);
     }
 
@@ -15,21 +15,21 @@ pub async fn message(ctx: &Context, msg: &Message, prefix: &str) -> Result<bool,
     let compile_result = match compile_result {
         Ok(result) => result,
         Err(err) => {
-            msg.reply(ctx, format!("**Error:** {err}"))
-                .await
-                .ok();
+            msg.reply(ctx, format!("**Error:** {err}")).await.ok();
 
             return Err(err);
         }
     };
 
     let compile_output = match compile_result {
-        DiscordCompilerOutput::Raw(text) => text.split("<sp>").map(|t| t.to_string()).collect(),
-        DiscordCompilerOutput::Compiler(output) => vec![output.as_discord_message()]
+        DiscordCompilerOutput::Raw(text) => text
+            .split("<sp>")
+            .map(std::string::ToString::to_string)
+            .collect(),
+        DiscordCompilerOutput::Compiler(output) => vec![output.as_discord_message()],
     };
 
-    send_multiple(ctx, msg, compile_output, true)
-        .await;
+    send_multiple(ctx, msg, compile_output, true).await;
 
     Ok(true)
 }

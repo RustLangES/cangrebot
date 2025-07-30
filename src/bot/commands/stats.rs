@@ -1,11 +1,12 @@
 use crate::api::routes::send_stats::{send_stats_to_api, ServerStats};
 use crate::bot::{Context, Error};
 use anyhow::anyhow;
+use chrono::Utc;
 use poise::serenity_prelude::{ChannelType, GetMessages, GuildId, Message, Timestamp};
 use serde_json::{json, Value};
-use chrono::{Utc, Duration};
 
 #[poise::command(slash_command, prefix_command)]
+#[allow(clippy::too_many_lines)] // TODO: too many lines allowed until someone works reworks this function
 pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
     ctx.defer().await?;
 
@@ -43,16 +44,18 @@ pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
 
     let serialized_msgs: Vec<Value> = latest_100
         .iter()
-        .map(|m| json!({
-            "id": m.id.to_string(),
-            "channel_id": m.channel_id.to_string(),
-            "author": {
-                "id": m.author.id.to_string(),
-                "name": m.author.name,
-            },
-            "content": m.content,
-            "timestamp": m.timestamp.to_string(),
-        }))
+        .map(|m| {
+            json!({
+                "id": m.id.to_string(),
+                "channel_id": m.channel_id.to_string(),
+                "author": {
+                    "id": m.author.id.to_string(),
+                    "name": m.author.name,
+                },
+                "content": m.content,
+                "timestamp": m.timestamp.to_string(),
+            })
+        })
         .collect();
 
     // ─────────────────────────────
@@ -64,7 +67,7 @@ pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
         .map_err(|_| anyhow!("No se pudieron enumerar los miembros"))?;
 
     let today = Utc::now().date_naive();
-    let new_members: Vec<Value> = members
+    let _new_members: Vec<Value> = members // TODO: Underscored until is used
         .iter()
         .filter_map(|m| {
             m.joined_at.map(|dt| {
@@ -73,11 +76,13 @@ pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
             })
         })
         .filter(|(_, date)| *date == today)
-        .map(|(m, date)| json!({
-            "id": m.user.id.to_string(),
-            "name": m.user.name.clone(),
-            "joined_at": date.to_string(),
-        }))
+        .map(|(m, date)| {
+            json!({
+                "id": m.user.id.to_string(),
+                "name": m.user.name.clone(),
+                "joined_at": date.to_string(),
+            })
+        })
         .collect();
 
     // ─────────────────────────────
@@ -90,19 +95,21 @@ pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
         .map_err(|_| anyhow!("No se pudieron enumerar los miembros"))?;
 
     let now_chrono = chrono::Utc::now();
-    let threshold = Timestamp::from_unix_timestamp((now_chrono - chrono::Duration::hours(24)).timestamp())
-        .expect("Invalid timestamp");
-
+    let threshold =
+        Timestamp::from_unix_timestamp((now_chrono - chrono::Duration::hours(24)).timestamp())
+            .expect("Invalid timestamp");
 
     let new_members: Vec<Value> = members
         .into_iter()
         .filter_map(|m| m.joined_at.map(|joined_at| (m, joined_at)))
         .filter(|(_, joined_at)| *joined_at > threshold)
-        .map(|(m, joined_at)| json!({
-            "id": m.user.id.to_string(),
-            "name": m.user.name,
-            "joined_at": joined_at.to_string(),
-        }))
+        .map(|(m, joined_at)| {
+            json!({
+                "id": m.user.id.to_string(),
+                "name": m.user.name,
+                "joined_at": joined_at.to_string(),
+            })
+        })
         .collect();
 
     // ─────────────────────────────
@@ -111,8 +118,8 @@ pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
     let stats = ServerStats {
         guild_id: guild_id.to_string(),
         guild_name: guild.name.clone(),
-        total_members: guild.approximate_member_count.unwrap_or(0) as usize,
-        active_members: guild.approximate_presence_count.unwrap_or(0) as usize,
+        total_members: usize::try_from(guild.approximate_member_count.unwrap_or(0))?,
+        active_members: usize::try_from(guild.approximate_presence_count.unwrap_or(0))?,
         total_channels: channels.len(),
         total_messages: latest_100.len() as u64,
         daily_messages: 0,
@@ -128,7 +135,7 @@ pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
     ctx.say(format!(
         "✅ Estadísticas enviadas. Se incluyeron {} mensajes y {} nuevos miembros.",
         stats.total_messages,
-        stats.new_members.as_ref().map_or(0, |v| v.len())
+        stats.new_members.as_ref().map_or(0, std::vec::Vec::len)
     ))
     .await?;
 

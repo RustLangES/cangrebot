@@ -1,5 +1,9 @@
-use poise::serenity_prelude::{
-    AutoArchiveDuration, ChannelId, ChannelType, CreateThread, Mentionable, ReactionType,
+use poise::{
+    serenity_prelude::{
+        AutoArchiveDuration, ChannelId, ChannelType, CreateEmbed, CreateMessage, CreateThread,
+        Mentionable, ReactionType,
+    },
+    CreateReply,
 };
 use tracing::info;
 
@@ -7,7 +11,7 @@ use crate::bot;
 
 /// Crea una sugerencia
 #[poise::command(slash_command, prefix_command)]
-pub async fn nueva(
+pub async fn sugerencia(
     ctx: bot::Context<'_>,
     #[description = "Agrega un Titulo a tu sugerencia"] titulo: String,
     #[description = "Cuentanos acerca de tu sugerencia"] contenido: String,
@@ -17,8 +21,20 @@ pub async fn nueva(
 
     let msg_channel = ChannelId::new(data.secrets.channel_suggest);
 
-    let msg = format!("{} nos sugiere\n\n{contenido}", ctx.author().mention(),);
-    let msg = msg_channel.say(&ctx, msg).await.unwrap();
+    let msg = msg_channel
+        .send_message(
+            ctx.http(),
+            CreateMessage::default().add_embed(
+                CreateEmbed::new()
+                    .title("Sugerencia")
+                    .description(format!(
+                        "{} nos sugiere:\n\n{contenido}",
+                        ctx.author().mention(),
+                    ))
+                    .color(0x0042_87F5),
+            ),
+        )
+        .await?;
 
     // Convert string emoji to ReactionType to allow custom emojis
     let check_reaction = ReactionType::Unicode("✅".to_string());
@@ -31,7 +47,12 @@ pub async fn nueva(
         .auto_archive_duration(AutoArchiveDuration::ThreeDays);
     msg_channel.create_thread(ctx, builder).await.unwrap();
 
-    ctx.say("Sugerencia Creada").await?;
+    ctx.send(
+        CreateReply::default()
+            .ephemeral(true)
+            .content("Sugerencia creada ✅"),
+    )
+    .await?;
 
     Ok(())
 }

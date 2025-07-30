@@ -1,4 +1,3 @@
-mod anti_spam;
 mod compiler;
 mod godbolt;
 mod join;
@@ -44,8 +43,12 @@ pub async fn handle(
         }
 
         FullEvent::GuildMemberAddition { new_member } => {
-            join::guild_member_addition(ctx, &GuildId::new(data.secrets.guild_id), new_member)
-                .await;
+            join::guild_member_addition_event(
+                ctx,
+                &GuildId::new(data.secrets.guild_id),
+                new_member,
+            )
+            .await;
         }
         FullEvent::InteractionCreate { interaction } => {
             // for buttons
@@ -67,7 +70,7 @@ pub async fn handle(
 
             if let Some(channel_id) = new.channel_id {
                 if channel_id == ChannelId::new(secrets.temporal_wait) {
-                    temporal_voice_join(ctx, &member, &guild_id, secrets.temporal_category).await?;
+                    temporal_voice_join(ctx, member, guild_id, secrets.temporal_category).await?;
                 }
             }
             if let Some(old) = old {

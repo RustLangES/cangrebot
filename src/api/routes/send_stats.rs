@@ -1,8 +1,7 @@
 use reqwest::Client;
 use serde::Serialize;
-use std::error::Error;
 use serde_json::Value;
-
+use std::error::Error;
 
 /// Estructura que contiene las estadísticas del servidor
 #[derive(Serialize, Clone)]
@@ -20,6 +19,7 @@ pub struct ServerStats {
 }
 
 /// Función para enviar las estadísticas a la API externa
+#[allow(dead_code)] // TODO: dead code allowed until used
 pub async fn send_stats_to_api(stats: ServerStats) -> Result<(), Box<dyn Error>> {
     let api_url = "https://webhook.site/7b724fc1-c713-45cd-8b86-fade7386a693";
     let client = Client::new();

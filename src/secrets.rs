@@ -24,6 +24,9 @@ pub struct CangrebotSecrets {
 }
 
 impl CangrebotSecrets {
+    /// # Panics
+    ///
+    /// This function will panic if any of the secrets it's not found in the environment file
     pub fn from<'a>(secrets: fn(&'a str) -> Result<String, std::env::VarError>) -> Self {
         dotenv().ok();
         Self {

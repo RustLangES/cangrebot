@@ -1,3 +1,4 @@
+#![allow(clippy::unused_async)]
 pub use poise::serenity_prelude as serenity;
 pub use secrets::CangrebotSecrets;
 
@@ -30,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::select! {
         _ = discord_bot.start_autosharded() => {},
-        _ = serve_router => {},
+        () = serve_router => {},
     };
     Ok(())
 }
