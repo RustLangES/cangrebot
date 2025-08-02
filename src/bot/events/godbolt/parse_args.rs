@@ -1,6 +1,6 @@
 use super::compiler::{fetch_compiler, CompilationType, GodBoltCompilerOutput, GodBoltError};
 use semver::Error as VersionError;
-use std::collections::HashMap;
+use std::{collections::HashMap, vec};
 use thiserror::Error;
 
 #[derive(Error, Debug)]
@@ -8,14 +8,14 @@ pub enum DiscordCompilerError {
     #[error("The message misses a code block.")]
     NoCodeBlock,
 
-    #[error("The message has no prefix or it's ambiguous.")]
-    NoPrefix,
+    #[error("The command doesn't exist.")]
+    InvalidCommand,
+
+    #[error("The message has no command.")]
+    NoCommand,
 
     #[error("You didn't provide a language in the code, please do with `\\`\\`\\`rust`.")]
     NoLanguage,
-
-    #[error("Additional characters were found, please remove them.")]
-    AdditionalCharacters,
 
     #[error(
         "A bot processed argument is invalid, make sure your arguments don't have white spaces."
@@ -34,7 +34,7 @@ pub enum DiscordCompilerError {
 
 pub enum DiscordCompilerCommand {
     Help,
-    CompileInput(DiscordCompilerInput),
+    Compile(DiscordCompilerInput),
 }
 
 pub struct DiscordCompilerInput {
@@ -54,95 +54,75 @@ impl TryFrom<String> for DiscordCompilerCommand {
     type Error = DiscordCompilerError;
 
     fn try_from(value: String) -> Result<Self, Self::Error> {
-        if value.contains("--help") {
-            return Ok(Self::Help);
-        }
-
-        let (mut args, next) = value
+        if let Ok((args, code)) = value
             .split_once("```")
             .ok_or(DiscordCompilerError::NoCodeBlock)
-            .map(|(args, next)| (args.to_string(), next.to_string()))?;
+            .map(|(args, code)| (args.to_string(), code.to_string()))
+        {
+            let mut args: Vec<String> = args
+                .split_ascii_whitespace()
+                .map(std::string::ToString::to_string)
+                .collect();
+            let code = code
+                .rsplit_once("```")
+                .ok_or(DiscordCompilerError::NoCodeBlock)?
+                .0;
 
-        let compile_type = args
-            .drain(..9)
-            .as_str()
-            // hold it.
-            .to_string();
-        // hold it.
-        let compile_type = compile_type.split_once(' ');
+            let command = args.clone();
+            let command = command.last().ok_or(DiscordCompilerError::NoCommand)?;
+            args.pop();
+            args.remove(0);
 
-        let Some((_, compile_type)) = compile_type else {
-            return Err(DiscordCompilerError::NoPrefix);
-        };
+            let (language, code) = code
+                .split_once([' ', '\n'])
+                .ok_or(DiscordCompilerError::NoLanguage)
+                .map(|(lang, code)| (lang.to_string(), code.to_string()))?;
 
-        let compile_type = match compile_type {
-            "run" => CompilationType::Execution,
-            "asm" => CompilationType::Assembly,
-            _ => return Err(DiscordCompilerError::NoPrefix),
-        };
+            let mut bot_args = HashMap::new();
+            let mut compiler_args: Vec<String> = vec![];
 
-        let mut bot_args = HashMap::<String, String>::new();
-        let mut compiler_args = Vec::new();
-
-        let mut next_is_of: Option<String> = None;
-        for arg in args.split(' ') {
-            let arg = arg.trim();
-
-            if let Some(last) = &next_is_of {
-                if arg.ends_with('"') {
-                    let arg_ptr = bot_args.get_mut(last).unwrap(); // key surely exists.
-
-                    *arg_ptr += arg;
+            for arg in args {
+                if arg.starts_with("--compiler-") {
+                    let arg = arg.replace("--compiler-", "");
+                    let (key, value) = arg
+                        .split_once('=')
+                        .ok_or(DiscordCompilerError::InvalidBotArg)?;
+                    bot_args.insert(key.to_string(), value.to_string());
+                } else {
+                    compiler_args.push(arg.to_string());
                 }
-
-                if arg[..arg.len() - 1].contains('"') {
-                    return Err(DiscordCompilerError::InvalidBotArg);
-                }
-
-                continue;
             }
 
-            if arg.starts_with("--compiler-") {
-                let arg_repl = arg.replace("--compiler-", "");
-                let (key, value) = &arg_repl
-                    .split_once('=')
-                    .ok_or(DiscordCompilerError::InvalidBotArg)?;
+            match command.as_str() {
+                "run" => Ok(Self::Compile(DiscordCompilerInput {
+                    compile_type: CompilationType::Execution,
+                    bot_args,
+                    compiler_args,
+                    language,
+                    code,
+                })),
+                "asm" => Ok(Self::Compile(DiscordCompilerInput {
+                    compile_type: CompilationType::Assembly,
+                    bot_args,
+                    compiler_args,
+                    language,
+                    code,
+                })),
+                "help" => Ok(Self::Help),
+                _ => Err(DiscordCompilerError::InvalidCommand),
+            }
+        } else {
+            let args: Vec<&str> = value.split_ascii_whitespace().collect();
 
-                if value.starts_with('"') && !value.ends_with('"') {
-                    next_is_of = Some((*key).to_string());
-                }
+            let args_clone = args.clone();
+            let command = args_clone.last().ok_or(DiscordCompilerError::NoCommand)?;
 
-                if value[1..value.len() - 1].contains('"') {
-                    return Err(DiscordCompilerError::InvalidBotArg);
-                }
-
-                bot_args.insert((*key).to_string(), (*value).to_string());
-            } else {
-                compiler_args.push(arg.to_string());
+            match *command {
+                "run" | "asm" => Err(DiscordCompilerError::NoCodeBlock),
+                "help" => Ok(Self::Help),
+                _ => Err(DiscordCompilerError::InvalidCommand),
             }
         }
-
-        let (code, next) = next
-            .split_once("```")
-            .ok_or(DiscordCompilerError::NoCodeBlock)
-            .map(|(args, next)| (args.to_string(), next.to_string()))?;
-
-        if !next.replace(' ', "").is_empty() {
-            return Err(DiscordCompilerError::AdditionalCharacters);
-        }
-
-        let split_code = code
-            .splitn(2, [' ', '\n'])
-            .map(str::trim)
-            .collect::<Vec<_>>();
-
-        Ok(Self::CompileInput(DiscordCompilerInput {
-            compile_type,
-            bot_args,
-            compiler_args,
-            language: (*split_code.first().ok_or(DiscordCompilerError::NoLanguage)?).to_string(),
-            code: (*split_code.get(1).ok_or(DiscordCompilerError::NoLanguage)?).to_string(),
-        }))
     }
 }
 
@@ -155,7 +135,7 @@ impl DiscordCompilerCommand {
                 ));
             }
 
-            Self::CompileInput(input) => input,
+            Self::Compile(input) => input,
         };
 
         Ok(DiscordCompilerOutput::Compiler(

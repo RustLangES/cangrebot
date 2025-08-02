@@ -1,10 +1,7 @@
 use serde::{Deserialize, Deserializer};
-use std::{
-    cmp::Ordering,
-    fmt::{Display, Error},
-};
+use std::{cmp::Ordering, fmt::Display};
 
-#[derive(Eq, PartialOrd, Clone)]
+#[derive(Eq, PartialOrd, Clone, Debug)]
 pub struct OptionalVersion {
     major: Option<i32>,
     minor: Option<i32>,
@@ -108,7 +105,7 @@ impl Display for OptionalVersion {
             }
             (Some(major), Some(minor), None) => write!(f, "{major}.{minor}"),
             (Some(major), None, None) => write!(f, "{major}"),
-            _ => Err(Error),
+            _ => write!(f, ""),
         }
     }
 }

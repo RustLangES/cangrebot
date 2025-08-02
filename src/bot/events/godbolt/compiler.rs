@@ -18,7 +18,7 @@ pub enum GodBoltError {
     InvalidOperation(String),
 }
 
-#[derive(Deserialize)]
+#[derive(Deserialize, Debug)]
 pub struct GodBoltCompiler {
     id: String,
     name: String,
