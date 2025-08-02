@@ -116,8 +116,8 @@ jobs:
 
       - name: Update Remote Secrets
         run: |
-          kubectl create secret generic "$NAMESPACE-secrets" \
-            --namespace="$NAMESPACE" \
+          kubectl create secret generic "${{ env.NAMESPACE }}-secrets" \
+            --namespace="${{ env.NAMESPACE }}" \
             --from-literal=DISCORD_TOKEN="${{ secrets.DISCORD_TOKEN }}" \
             --from-literal=GUILD_ID="${{ secrets.GUILD_ID }}" \
             --from-literal=CHANNEL_DAILY="${{ secrets.CHANNEL_DAILY }}" \
@@ -130,4 +130,4 @@ jobs:
 
       - name: Update Remote Image
         run: |
-          kubectl set image "deployment/$NAMESPACE" bot="ghcr.io/$IMAGE_NAME:$VERSION" -n "$NAMESPACE"
+          kubectl set image "deployment/${{ env.NAMESPACE }}" bot="ghcr.io/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" -n "${{ env.NAMESPACE }}"
