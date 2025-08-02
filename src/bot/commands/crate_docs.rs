@@ -16,6 +16,7 @@ static SEARCH: [&str; 7] = [
 
 static OFFICIAL_CRATES: [&str; 5] = ["core", "std", "alloc", "proc_macro", "test"];
 
+/// Buscar en la documentacion de Rust
 #[poise::command(broadcast_typing, slash_command)]
 pub async fn docs(
     ctx: bot::Context<'_>,
