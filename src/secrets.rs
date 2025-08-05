@@ -17,6 +17,8 @@ pub struct CangrebotSecrets {
     pub temporal_logs: u64,
     /// Prefix for text commands. Defaults to "&"
     pub discord_prefix: String,
+    /// Gemini key
+    pub gemini_key: Option<String>,
     /// Discord Bot Token
     pub discord_token: String,
     /// Server id
@@ -55,6 +57,7 @@ impl CangrebotSecrets {
                 warn!("'DISCORD_PREFIX' was not found. Defaults to \"&\"");
                 "&".to_owned()
             }),
+            gemini_key: secrets("GEMINI_KEY").ok(),
             discord_token: secrets("DISCORD_TOKEN").expect("'DISCORD_TOKEN' was not found"),
             guild_id: secrets("GUILD_ID")
                 .expect("'GUILD_ID' was not found")

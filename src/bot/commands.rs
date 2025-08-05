@@ -1,3 +1,4 @@
+pub mod ask;
 mod crate_docs;
 mod explain;
 mod help;
@@ -23,5 +24,6 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         suggest::cancelled::sugerencia_cancelada(),
         //stats::send_stats(), TODO: Removed for now
         selftimeout::selftimeout(),
+        ask::ask(),
     ]
 }
