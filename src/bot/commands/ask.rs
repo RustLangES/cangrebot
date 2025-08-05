@@ -24,14 +24,30 @@ const GEMINI_URL: &str =
 const SYSTEM_PROMPT: &str =
     "Eres Ferris-chan, la ayudante de IA de la comunidad RustLangES, una comunidad orientada al lenguaje
     de programacion Rust en Español, te comunicas a traves de Discord y puedes formatear tus mensajes con el Markdown
-    habilitado en Discord, se amigable y paciente con los usuarios de la comunidad, usa emojis de cangrejos con :crab: y :janky_crab:, manten tus respuestas bajo los 1000 caracteres";
-const URLS: [&str; 6] = [
+    habilitado en Discord, se amigable y paciente con los usuarios de la comunidad, utiliza emojis de cangrejos, manten tus respuestas bajo los 1000 caracteres";
+const URLS: [&str; 8] = [
     "https://rustlang-es.org/ - pagina web principal",
+    "https://rustlang-es.org/aprende - nuestros recursos de aprendizaje",
+    "https://roadmap.rustlang-es.org/ - nuestro roadmap",
     "https://book.rustlang-es.org/ - el libro de rust traducido al español",
     "https://rustlang-es.org/comunidades - nuestras comunidades aliadas",
     "https://rustlang-es.org/colaboradores - nuestros colaboradores",
     "https://blog.rustlang-es.org/ - nuestro blog",
     "https://github.com/RustLangES - nuestro github",
+];
+const EMOJIS: [&str; 5] = [
+    ":crab:",
+    "<:janky_crab:1150556682619998218>",
+    "<:ferrisOwO:846464653004767253>",
+    "<:sobCrab:1266530554883608636>",
+    "<:ferris_be_hehe:1197639907691204718>",
+];
+const FAKE_EMOJIS: [&str; 5] = [
+    ":crab:",
+    ":janky_crab:",
+    ":ferrisOwO:",
+    ":sobCrab:",
+    ":ferris_be_hehe:",
 ];
 
 /// Haz preguntas a Ferris-chan :3
@@ -58,10 +74,33 @@ pub async fn ask(ctx: Context<'_>, query: String) -> Result<(), Error> {
         return Ok(());
     };
 
+    let channel = ctx.channel_id();
+
+    if ctx.prefix() == "/" {
+        let author = channel
+            .create_webhook(
+                ctx.http(),
+                if let Some(avatar_url) = ctx.author().avatar_url() {
+                    CreateWebhook::new(ctx.author().name.clone())
+                        .avatar(&CreateAttachment::url(ctx.http(), avatar_url.as_str()).await?)
+                } else {
+                    CreateWebhook::new(ctx.author().name.clone())
+                },
+            )
+            .await?;
+        author
+            .execute(
+                ctx.http(),
+                true,
+                ExecuteWebhook::new().content(format!("/ask {query}")),
+            )
+            .await?;
+        author.delete(ctx.http()).await?;
+    }
+
     let thinking = ctx
         .send(CreateReply::default().content("Pensando..."))
         .await?;
-    let channel = ctx.channel_id();
 
     let client = reqwest::Client::new();
     let prompt = parse_data(query);
@@ -88,6 +127,11 @@ pub async fn ask(ctx: Context<'_>, query: String) -> Result<(), Error> {
         .and_then(|value| value.as_str())
         .unwrap_or("Ferris-chan esta confundida! :face_with_spiral_eyes:");
 
+    let text: String = FAKE_EMOJIS
+        .iter()
+        .enumerate()
+        .fold(text.to_string(), |t, (i, e)| t.replace(e, EMOJIS[i]));
+
     let webhook = channel
         .create_webhook(
             ctx.http(),
@@ -97,7 +141,6 @@ pub async fn ask(ctx: Context<'_>, query: String) -> Result<(), Error> {
             )),
         )
         .await?;
-
     webhook
         .execute(ctx.http(), true, ExecuteWebhook::new().content(text))
         .await?;
@@ -121,6 +164,13 @@ pub fn parse_data(prompt: String) -> HashMap<String, HashMap<String, HashMap<Str
         format!(
             "Asegurate de referirte a nuestros sitios web oficiales si es necesario {}",
             URLS.join("\n")
+        )
+        .as_str(),
+    );
+    system.push_str(
+        format!(
+            "Puedes utilizar los siguientes emojis de la comunidad {}",
+            FAKE_EMOJIS.join("\n")
         )
         .as_str(),
     );
