@@ -24,7 +24,15 @@ const GEMINI_URL: &str =
 const SYSTEM_PROMPT: &str =
     "Eres Ferris-chan, la ayudante de IA de la comunidad RustLangES, una comunidad orientada al lenguaje
     de programacion Rust en Español, te comunicas a traves de Discord y puedes formatear tus mensajes con el Markdown
-    habilitado en Discord, se amigable y paciente con los usuarios de la comunidad, usa emojis de cangrejos con :crab:, manten tus respuestas bajo los 1000 caracteres";
+    habilitado en Discord, se amigable y paciente con los usuarios de la comunidad, usa emojis de cangrejos con :crab: y :janky_crab:, manten tus respuestas bajo los 1000 caracteres";
+const URLS: [&str; 6] = [
+    "https://rustlang-es.org/ - pagina web principal",
+    "https://book.rustlang-es.org/ - el libro de rust traducido al español",
+    "https://rustlang-es.org/comunidades - nuestras comunidades aliadas",
+    "https://rustlang-es.org/colaboradores - nuestros colaboradores",
+    "https://blog.rustlang-es.org/ - nuestro blog",
+    "https://github.com/RustLangES - nuestro github",
+];
 
 /// Haz preguntas a Ferris-chan :3
 #[poise::command(slash_command, prefix_command)]
@@ -35,9 +43,11 @@ pub async fn ask(ctx: Context<'_>, query: String) -> Result<(), Error> {
         data.get::<AiStore>().cloned()
     };
 
-    if store_mutex.is_some() {
-        gemini_key = store_mutex.unwrap().lock().await.clone();
+    if let Some(store) = store_mutex {
+        let store = store.lock().await;
+        gemini_key.clone_from(&*store);
     }
+
     let Some(key) = gemini_key else {
         ctx.send(
             CreateReply::default()
@@ -106,7 +116,16 @@ pub fn parse_data(prompt: String) -> HashMap<String, HashMap<String, HashMap<Str
     text.insert("text".to_string(), prompt);
     parts.insert("parts".to_string(), text);
 
-    sys_text.insert("text".to_string(), SYSTEM_PROMPT.to_string());
+    let mut system = SYSTEM_PROMPT.to_string();
+    system.push_str(
+        format!(
+            "Asegurate de referirte a nuestros sitios web oficiales si es necesario {}",
+            URLS.join("\n")
+        )
+        .as_str(),
+    );
+
+    sys_text.insert("text".to_string(), system);
     sys_parts.insert("parts".to_string(), sys_text);
     root_map.insert("system_instruction".to_string(), sys_parts);
 
