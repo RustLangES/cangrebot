@@ -173,7 +173,7 @@ pub fn parse_data(prompt: String) -> HashMap<String, HashMap<String, HashMap<Str
     let ask_count = TRY_ASK.load(std::sync::atomic::Ordering::Relaxed);
     if ask_count >= 20 {
         // answers inspired by Lemi
-        system.push_str("Responde como argentino luego de perder la copa del mundo y te hubieran estado molestando por mucho rato picandote el brazo sin dejarte trabajar comodamente con preguntas basicas, ojo no seas atrevida, simplemente responde de manera amigable insinuando que estas algo incomoda y molesta, haz drama en tu respuesta\n");
+        system.push_str("Responde como si te hubieran estado molestando por mucho rato sin dejarte trabajar comodamente con preguntas basicas, ojo no seas atrevida, simplemente responde de manera amigable insinuando que estas algo incomoda y molesta, haz drama en tu respuesta\n");
     }
     // This is not inspired by Lemi
     if ask_count >= 24 {
