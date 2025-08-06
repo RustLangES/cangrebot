@@ -54,13 +54,18 @@ jobs:
         with:
           submodules: "recursive"
 
-      - name: Install Nix
-        uses: cachix/install-nix-action@v30
+      - name: Install nix
+        uses: nixbuild/nix-quick-install-action@v30
         with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: |
-            experimental-features = nix-command flakes
+          nix_conf: |
+            keep-env-derivations = true
+            keep-outputs = true
+
+      - name: Restore and save Nix store
+        uses: nix-community/cache-nix-action@v6
+        with:
+          primary-key: build-${{ runner.os }}-${{ hashFiles('**/*.nix', 'flake.lock') }}
+          restore-prefixes-first-match: build-${{ runner.os }}-
 
       - name: Set IMAGE_NAME
         run: echo "IMAGE_NAME=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
