@@ -132,7 +132,7 @@ pub async fn ask(ctx: Context<'_>, #[rest] query: String) -> Result<(), Error> {
         .and_then(|value| value.get("text"))
         .and_then(|value| value.as_str())
         .unwrap_or_else(|| {
-            TRY_ASK.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
+            TRY_ASK.fetch_add(2, std::sync::atomic::Ordering::AcqRel);
             "Ferris-chan esta confundida! :face_with_spiral_eyes:"
         });
 
@@ -155,6 +155,7 @@ pub async fn ask(ctx: Context<'_>, #[rest] query: String) -> Result<(), Error> {
         .await?;
     webhook.delete(ctx.http()).await?;
     thinking.delete(ctx).await?;
+    TRY_ASK.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
     Ok(())
 }
 
@@ -169,8 +170,12 @@ pub fn parse_data(prompt: String) -> HashMap<String, HashMap<String, HashMap<Str
     parts.insert("parts".to_string(), text);
 
     let mut system = SYSTEM_PROMPT.to_string();
-    if TRY_ASK.load(std::sync::atomic::Ordering::Relaxed) >= 20 {
-        system.push_str("Responde como si te hubieran estado molestando por mucho rato picandote el brazo sin dejarte trabajar comodamente con preguntas basicas, ojo no seas atrevida, simplemente responde de manera amigable insinuando que estas algo incomoda y molesta, haz drama en tu respuesta\n");
+    let ask_count = TRY_ASK.load(std::sync::atomic::Ordering::Relaxed);
+    if ask_count >= 20 {
+        // answers inspired by Lemi
+        system.push_str("Responde como argentino luego de perder la copa del mundo y te hubieran estado molestando por mucho rato picandote el brazo sin dejarte trabajar comodamente con preguntas basicas, ojo no seas atrevida, simplemente responde de manera amigable insinuando que estas algo incomoda y molesta, haz drama en tu respuesta\n");
+    }
+    if ask_count >= 24 {
         TRY_ASK.store(0, std::sync::atomic::Ordering::SeqCst);
     }
     system.push_str(
