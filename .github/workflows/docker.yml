@@ -116,18 +116,13 @@ jobs:
 
       - name: Update Remote Secrets
         run: |
-          kubectl create secret generic "${{ env.NAMESPACE }}-secrets" \
+          kubectl patch secret "${{ env.NAMESPACE }}-secrets" \
             --namespace="${{ env.NAMESPACE }}" \
-            --from-literal=DISCORD_TOKEN="${{ secrets.DISCORD_TOKEN }}" \
-            --from-literal=GUILD_ID="${{ secrets.GUILD_ID }}" \
-            --from-literal=CHANNEL_DAILY="${{ secrets.CHANNEL_DAILY }}" \
-            --from-literal=CHANNEL_SUGGEST="${{ secrets.CHANNEL_SUGGEST }}" \
-            --from-literal=TEMPORAL_WAIT="${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" \
-            --from-literal=TEMPORAL_CATEGORY="${{ secrets.CANGREBOT_TEMP_CATEGORY }}" \
-            --from-literal=TEMPORAL_LOGS="${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" \
-            --from-literal=BOT_APIKEY="${{ secrets.CANGREBOT_APIKEY }}" \
-            --dry-run=client -o yaml | kubectl apply -f -
+            --type=merge \
+            -p='{"data":{"DISCORD_TOKEN":"'${{ secrets.DISCORD_TOKEN }}'","GUILD_ID":"'${{ secrets.GUILD_ID}}'","CHANNEL_DAILY":"'${{ secrets.CHANNEL_DAILY}}'","CHANNEL_SUGGEST":"'${{ secrets.CHANNEL_SUGGEST}}'","TEMPORAL_WAIT":"'${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL}}'","TEMPORAL_CATEGORY":"'${{ secrets.CANGREBOT_TEMP_CATEGORY}}'","TEMPORAL_LOGS":"'${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL}}'","BOT_APIKEY":"'${{ secrets.CANGREBOT_APIKEY}}'","GEMINI_KEY":"'${{ secrets.CANGREBOT_GEMINI_KEY}}'"}}'
 
       - name: Update Remote Image
         run: |
-          kubectl set image "deployment/${{ env.NAMESPACE }}" bot="ghcr.io/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" -n "${{ env.NAMESPACE }}"
+          kubectl set image "deployment/${{ env.NAMESPACE }}" \
+            bot="ghcr.io/${{ env.IMAGE_NAME }}:${{ env.VERSION }}" \
+            -n "${{ env.NAMESPACE }}"
