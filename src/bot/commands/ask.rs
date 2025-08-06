@@ -1,9 +1,12 @@
-use std::{collections::HashMap, sync::Arc};
+use std::{
+    collections::HashMap,
+    sync::{Arc, atomic::AtomicU8},
+};
 
 use crate::bot::{Context, Error};
 use poise::{
-    serenity_prelude::{prelude::TypeMapKey, CreateAttachment, CreateWebhook, ExecuteWebhook},
     CreateReply,
+    serenity_prelude::{CreateAttachment, CreateWebhook, ExecuteWebhook, prelude::TypeMapKey},
 };
 use reqwest::header::CONTENT_TYPE;
 use tokio::sync::Mutex;
@@ -12,6 +15,8 @@ struct AiStore;
 impl TypeMapKey for AiStore {
     type Value = Arc<Mutex<Option<String>>>;
 }
+
+static TRY_ASK: AtomicU8 = AtomicU8::new(0);
 
 pub async fn setup_gemini(ctx: &poise::serenity_prelude::client::Context, secret: Option<String>) {
     let secret = Arc::new(Mutex::new(secret));
@@ -52,7 +57,7 @@ const FAKE_EMOJIS: [&str; 5] = [
 
 /// Haz preguntas a Ferris-chan :3
 #[poise::command(slash_command, prefix_command)]
-pub async fn ask(ctx: Context<'_>, query: String) -> Result<(), Error> {
+pub async fn ask(ctx: Context<'_>, #[rest] query: String) -> Result<(), Error> {
     let mut gemini_key: Option<String> = None;
     let store_mutex = {
         let data = { ctx.serenity_context().data.read().await };
@@ -71,6 +76,7 @@ pub async fn ask(ctx: Context<'_>, query: String) -> Result<(), Error> {
                 .ephemeral(true),
         )
         .await?;
+        TRY_ASK.fetch_add(1, std::sync::atomic::Ordering::AcqRel);
         return Ok(());
     };
 
@@ -160,6 +166,9 @@ pub fn parse_data(prompt: String) -> HashMap<String, HashMap<String, HashMap<Str
     parts.insert("parts".to_string(), text);
 
     let mut system = SYSTEM_PROMPT.to_string();
+    if TRY_ASK.load(std::sync::atomic::Ordering::Relaxed) >= 2 {
+        system.push_str("Responde como si te hubieran estado molestando mientras no estabas, haz drama, mucho drama en tu respuesta\n");
+    }
     system.push_str(
         format!(
             "Asegurate de referirte a nuestros sitios web oficiales si es necesario {}",
