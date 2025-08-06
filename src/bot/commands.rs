@@ -8,6 +8,7 @@ mod ping;
 mod selftimeout;
 mod stats;
 mod suggest;
+mod tts;
 
 use super::{Data, Error};
 
@@ -25,5 +26,8 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         //stats::send_stats(), TODO: Removed for now
         selftimeout::selftimeout(),
         ask::ask(),
+        tts::join::join(),
+        tts::leave::leave(),
+        tts::tts::tts(),
     ]
 }
