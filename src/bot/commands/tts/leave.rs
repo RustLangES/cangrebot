@@ -21,6 +21,8 @@ pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
             ),
         )
         .await?;
+
+        return Ok(());
     }
 
     ctx.send(
