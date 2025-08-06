@@ -175,6 +175,7 @@ pub fn parse_data(prompt: String) -> HashMap<String, HashMap<String, HashMap<Str
         // answers inspired by Lemi
         system.push_str("Responde como argentino luego de perder la copa del mundo y te hubieran estado molestando por mucho rato picandote el brazo sin dejarte trabajar comodamente con preguntas basicas, ojo no seas atrevida, simplemente responde de manera amigable insinuando que estas algo incomoda y molesta, haz drama en tu respuesta\n");
     }
+    // This is not inspired by Lemi
     if ask_count >= 24 {
         TRY_ASK.store(0, std::sync::atomic::Ordering::SeqCst);
     }
