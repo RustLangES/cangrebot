@@ -1,12 +1,12 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, atomic::AtomicU8},
+    sync::{atomic::AtomicU8, Arc},
 };
 
 use crate::bot::{Context, Error};
 use poise::{
+    serenity_prelude::{prelude::TypeMapKey, CreateAttachment, CreateWebhook, ExecuteWebhook},
     CreateReply,
-    serenity_prelude::{CreateAttachment, CreateWebhook, ExecuteWebhook, prelude::TypeMapKey},
 };
 use reqwest::header::CONTENT_TYPE;
 use tokio::sync::Mutex;
