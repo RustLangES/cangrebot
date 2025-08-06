@@ -10,29 +10,6 @@ env:
   REGISTRY: ghcr.io
 
 jobs:
-  generate-matrix:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.generate-matrix.outputs.matrix }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Nix
-        uses: cachix/install-nix-action@v30
-        with:
-          nix_path: nixpkgs=channel:nixos-unstable
-          github_access_token: ${{ secrets.GITHUB_TOKEN }}
-          extra_nix_config: |
-            experimental-features = nix-command flakes
-
-      - name: Generate matrix
-        id: generate-matrix
-        run: |
-          MATRIX=$(nix run .#matrix --quiet)
-          echo "Generated Matrix:"
-          echo "$MATRIX"
-          echo "matrix=$MATRIX" >> $GITHUB_OUTPUT
-
   build-and-push-image:
     runs-on: ubuntu-latest
     permissions:
@@ -40,11 +17,6 @@ jobs:
       packages: write
       attestations: write
       id-token: write
-    needs: generate-matrix
-    strategy:
-      fail-fast: false
-      matrix:
-        include: ${{ fromJson(needs.generate-matrix.outputs.matrix) }}
     outputs:
       version: ${{ steps.set-version.outputs.version }}
 
@@ -84,7 +56,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: (${{ matrix.arch }}) Extract Version and Build/Push Images
+      - name: Extract Version and Build/Push Images
         env:
           REGISTRY: ${{ env.REGISTRY }}
           IMAGE_NAME: ${{ env.IMAGE_NAME }}
@@ -92,7 +64,7 @@ jobs:
           IMG_NAME="${REGISTRY}/${IMAGE_NAME}"
 
           echo "Building ${IMG_NAME}:${VERSION}"
-          nix build '.?submodules=1#image-${{ matrix.arch }}'
+          nix build '.?submodules=1#image'
           docker load <./result
 
           echo "Publish '${VERSION}'"
