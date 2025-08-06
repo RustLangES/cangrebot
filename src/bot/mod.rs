@@ -4,6 +4,7 @@ mod util;
 
 use anyhow::anyhow;
 use poise::serenity_prelude::{futures::TryFutureExt, GuildId};
+use songbird::SerenityInit;
 use tracing::info;
 
 use crate::{serenity, CangrebotSecrets};
@@ -77,6 +78,7 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
 
     serenity::ClientBuilder::new(&secrets.discord_token, intents)
         .framework(framework)
+        .register_songbird()
         .await
         .map_err(|err| anyhow!("Error crating client: {err}"))
 }
