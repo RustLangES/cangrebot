@@ -168,6 +168,7 @@ pub fn parse_data(prompt: String) -> HashMap<String, HashMap<String, HashMap<Str
     let mut system = SYSTEM_PROMPT.to_string();
     if TRY_ASK.load(std::sync::atomic::Ordering::Relaxed) >= 2 {
         system.push_str("Responde como si te hubieran estado molestando mientras no estabas, haz drama, mucho drama en tu respuesta\n");
+        TRY_ASK.store(0, std::sync::atomic::Ordering::SeqCst);
     }
     system.push_str(
         format!(
