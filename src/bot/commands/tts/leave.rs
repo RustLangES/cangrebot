@@ -11,30 +11,27 @@ pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
         .ok_or("No se pudo obtener el manager de voz")?
         .clone();
 
-    match manager.leave(guild_id).await {
-        Ok(_) => {
-            ctx.send(
-                CreateReply::default().embed(
-                    CreateEmbed::new()
-                        .title("Desconectado")
-                        .description("He salido del canal de voz.")
-                        .color(0x0000_FF00),
-                ),
-            )
-            .await?;
-        }
-        Err(_) => {
-            ctx.send(
-                CreateReply::default().embed(
-                    CreateEmbed::new()
-                        .title("Error")
-                        .description("No pude salir del canal de voz. ¿Estoy conectado?")
-                        .color(0x00FF_0000),
-                ),
-            )
-            .await?;
-        }
+    if manager.leave(guild_id).await.is_err() {
+        ctx.send(
+            CreateReply::default().embed(
+                CreateEmbed::new()
+                    .title("Error")
+                    .description("No pude salir del canal de voz. ¿Estoy conectado?")
+                    .color(0x00FF_0000),
+            ),
+        )
+        .await?;
     }
+
+    ctx.send(
+        CreateReply::default().embed(
+            CreateEmbed::new()
+                .title("Desconectado")
+                .description("He salido del canal de voz.")
+                .color(0x0000_FF00),
+        ),
+    )
+    .await?;
 
     Ok(())
 }
