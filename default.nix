@@ -10,6 +10,7 @@
   buildInputs = with pkgs; [
     pkg-config
     libopus
+    cmake
   ];
 
   commonArgs = rec{
@@ -31,8 +32,6 @@
     };
 
     inherit buildInputs;
-
-    RUSTFLAGS = "-C relocation-model=static";
   };
 
   appPkg = craneLib.buildPackage (commonArgs // {
