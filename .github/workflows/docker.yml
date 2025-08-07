@@ -93,15 +93,15 @@ jobs:
 
       - name: Update Remote Secrets
         run: |
-          DISCORD_TOKEN=$(echo -n "${{ secrets.DISCORD_TOKEN }}" | base64)
-          GUILD_ID=$(echo -n "${{ secrets.GUILD_ID }}" | base64)
-          CHANNEL_DAILY=$(echo -n "${{ secrets.CHANNEL_DAILY }}" | base64)
-          CHANNEL_SUGGEST=$(echo -n "${{ secrets.CHANNEL_SUGGEST }}" | base64)
-          TEMPORAL_WAIT=$(echo -n "${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" | base64)
-          TEMPORAL_CATEGORY=$(echo -n "${{ secrets.CANGREBOT_TEMP_CATEGORY }}" | base64)
-          TEMPORAL_LOGS=$(echo -n "${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" | base64)
-          BOT_APIKEY=$(echo -n "${{ secrets.CANGREBOT_APIKEY }}" | base64)
-          GEMINI_KEY=$(echo -n "${{ secrets.CANGREBOT_GEMINI_KEY }}" | base64)
+          DISCORD_TOKEN=$(echo -n "${{ secrets.DISCORD_TOKEN }}" | base64 -w 0)
+          GUILD_ID=$(echo -n "${{ secrets.GUILD_ID }}" | base64 -w 0)
+          CHANNEL_DAILY=$(echo -n "${{ secrets.CHANNEL_DAILY }}" | base64 -w 0)
+          CHANNEL_SUGGEST=$(echo -n "${{ secrets.CHANNEL_SUGGEST }}" | base64 -w 0)
+          TEMPORAL_WAIT=$(echo -n "${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" | base64 -w 0)
+          TEMPORAL_CATEGORY=$(echo -n "${{ secrets.CANGREBOT_TEMP_CATEGORY }}" | base64 -w 0)
+          TEMPORAL_LOGS=$(echo -n "${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" | base64 -w 0)
+          BOT_APIKEY=$(echo -n "${{ secrets.CANGREBOT_APIKEY }}" | base64 -w 0)
+          GEMINI_KEY=$(echo -n "${{ secrets.CANGREBOT_GEMINI_KEY }}" | base64 -w 0)
 
           cat <<EOF > patch.json
           {
