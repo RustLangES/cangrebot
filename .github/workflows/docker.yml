@@ -93,10 +93,36 @@ jobs:
 
       - name: Update Remote Secrets
         run: |
+          DISCORD_TOKEN=$(echo -n "${{ secrets.DISCORD_TOKEN }}" | base64)
+          GUILD_ID=$(echo -n "${{ secrets.GUILD_ID }}" | base64)
+          CHANNEL_DAILY=$(echo -n "${{ secrets.CHANNEL_DAILY }}" | base64)
+          CHANNEL_SUGGEST=$(echo -n "${{ secrets.CHANNEL_SUGGEST }}" | base64)
+          TEMPORAL_WAIT=$(echo -n "${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL }}" | base64)
+          TEMPORAL_CATEGORY=$(echo -n "${{ secrets.CANGREBOT_TEMP_CATEGORY }}" | base64)
+          TEMPORAL_LOGS=$(echo -n "${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL }}" | base64)
+          BOT_APIKEY=$(echo -n "${{ secrets.CANGREBOT_APIKEY }}" | base64)
+          GEMINI_KEY=$(echo -n "${{ secrets.CANGREBOT_GEMINI_KEY }}" | base64)
+
+          cat <<EOF > patch.json
+          {
+            "data": {
+              "DISCORD_TOKEN": "$DISCORD_TOKEN",
+              "GUILD_ID": "$GUILD_ID",
+              "CHANNEL_DAILY": "$CHANNEL_DAILY",
+              "CHANNEL_SUGGEST": "$CHANNEL_SUGGEST",
+              "TEMPORAL_WAIT": "$TEMPORAL_WAIT",
+              "TEMPORAL_CATEGORY": "$TEMPORAL_CATEGORY",
+              "TEMPORAL_LOGS": "$TEMPORAL_LOGS",
+              "BOT_APIKEY": "$BOT_APIKEY",
+              "GEMINI_KEY": "$GEMINI_KEY"
+            }
+          }
+          EOF
+
           kubectl patch secret "${{ env.NAMESPACE }}-secrets" \
             --namespace="${{ env.NAMESPACE }}" \
             --type=merge \
-            -p='{"data":{"DISCORD_TOKEN":"'${{ secrets.DISCORD_TOKEN }}'","GUILD_ID":"'${{ secrets.GUILD_ID}}'","CHANNEL_DAILY":"'${{ secrets.CHANNEL_DAILY}}'","CHANNEL_SUGGEST":"'${{ secrets.CHANNEL_SUGGEST}}'","TEMPORAL_WAIT":"'${{ secrets.CANGREBOT_TEMP_WAIT_CHANNEL}}'","TEMPORAL_CATEGORY":"'${{ secrets.CANGREBOT_TEMP_CATEGORY}}'","TEMPORAL_LOGS":"'${{ secrets.CANGREBOT_TEMP_LOGS_CHANNEL}}'","BOT_APIKEY":"'${{ secrets.CANGREBOT_APIKEY}}'","GEMINI_KEY":"'${{ secrets.CANGREBOT_GEMINI_KEY}}'"}}'
+            --patch-file=patch.json
 
       - name: Update Remote Image
         run: |
