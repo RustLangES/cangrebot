@@ -8,6 +8,14 @@ mod secrets;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    #[cfg(debug_assertions)]
+    {
+        println!("db");
+        tracing_subscriber::fmt()
+            .with_max_level(tracing::Level::DEBUG)
+            .init();
+    }
+
     color_eyre::install().expect("Failed to install color_eyre");
 
     let secrets = CangrebotSecrets::from(std::env::var);
