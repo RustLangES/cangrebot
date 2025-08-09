@@ -60,7 +60,7 @@ pub async fn stop(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
             CreateReply::default().embed(
                 CreateEmbed::new()
                     .title("Error")
-                    .description("")
+                    .description("Solo el autor original o un usuario con el permiso de prioridad puede detener la reproducción.")
                     .color(0x00FF_0000),
             ),
         )
