@@ -53,7 +53,7 @@ pub async fn stop(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
     let perms = ctx
         .guild()
         .ok_or("Not in a guild")?
-        .user_permissions_in(&guild_channel, &member.as_ref());
+        .user_permissions_in(&guild_channel, member.as_ref());
 
     if author_id != &ctx.author().id && !perms.priority_speaker() {
         ctx.send(
