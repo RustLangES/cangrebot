@@ -1,15 +1,17 @@
+use std::sync::Arc;
+
 use crate::bot;
 use poise::serenity_prelude::CreateEmbed;
 use poise::CreateReply;
 use reqwest::Client;
 use songbird::input::HttpRequest;
+use songbird::tracks::Track;
 use tracing::info;
 use urlencoding::encode;
 
 #[poise::command(slash_command, prefix_command, guild_only)]
-pub async fn tts(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error> {
+pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
     let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
-    info!("Guild ID: {}", guild_id);
 
     let manager = songbird::get(ctx.serenity_context())
         .await
@@ -29,14 +31,19 @@ pub async fn tts(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error> 
         return Ok(());
     };
 
+    let text = format!("{} dice: {}", ctx.author().display_name(), &text);
+
     let url = format!(
         "https://translate.google.com/translate_tts?client=tw-ob&tl=es&q={}",
         encode(&text)
     );
 
-    let data = HttpRequest::new(Client::new(), url).clone();
+    info!("requesting {}", url);
 
-    handler_lock.lock().await.play_input(data.into());
+    let data = HttpRequest::new(Client::new(), url).clone();
+    let t: Track = Track::new_with_data(data.into(), Arc::new(ctx.author().id));
+
+    handler_lock.lock().await.enqueue(t).await;
 
     ctx.send(
         CreateReply::default().embed(
