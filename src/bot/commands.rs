@@ -29,5 +29,6 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         tts::join::join(),
         tts::leave::leave(),
         tts::tts::tts(),
+        tts::stop::stop(),
     ]
 }
