@@ -1,17 +1,73 @@
-use std::sync::Arc;
-
 use crate::bot;
-use poise::serenity_prelude::CreateEmbed;
+use poise::serenity_prelude::futures::future::join_all;
+use poise::serenity_prelude::{self, CreateEmbed, GuildId, Http};
 use poise::CreateReply;
+use regex::{Captures, Regex};
 use reqwest::Client;
 use songbird::input::HttpRequest;
 use songbird::tracks::Track;
+use std::borrow::Cow;
+use std::sync::Arc;
 use tracing::info;
 use urlencoding::encode;
 
+macro_rules! replace_patterns  {
+    ($text:expr, [ $( ($re:expr, |$caps:ident| $body:expr) ),* $(,)? ]) => {{
+        let mut result = $text.to_string();
+        $(
+            let re = Regex::new($re).expect("regex inválido");
+            result = re.replace_all(&result, |$caps: &Captures| -> Cow<str> {
+                $body
+            }).into_owned();
+        )*
+        result
+    }};
+}
+
+pub async fn replace_mentions(
+    guild_id: GuildId,
+    http: Arc<Http>,
+    raw_text: &str,
+) -> Result<String, serenity_prelude::Error> {
+    let mention_re = Regex::new(r"<@(\d+)>").unwrap();
+    let mut resolved = String::with_capacity(raw_text.len());
+    let mut last_end = 0;
+
+    let matches: Vec<(std::ops::Range<usize>, u64)> = mention_re
+        .captures_iter(raw_text)
+        .filter_map(|caps| {
+            let m = caps.get(0)?;
+            let id_str = caps.get(1)?.as_str();
+            let id = id_str.parse::<u64>().ok()?;
+            Some((m.range(), id))
+        })
+        .collect();
+
+    let futures = matches.iter().map(|(_, id)| {
+        let http = http.clone();
+        async move {
+            let member = guild_id.member(&http, *id).await?;
+            Ok::<_, serenity_prelude::Error>(member.display_name().to_string())
+        }
+    });
+
+    let display_names = join_all(futures).await;
+
+    for ((range, _), name_result) in matches.into_iter().zip(display_names) {
+        let nick = name_result?;
+        resolved.push_str(&raw_text[last_end..range.start]);
+        resolved.push_str(&nick);
+        last_end = range.end;
+    }
+
+    resolved.push_str(&raw_text[last_end..]);
+    Ok(resolved)
+}
+
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
-    let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
+    let guild_id = ctx.guild_id().ok_or(".")?;
+    let http = ctx.serenity_context().http.clone();
 
     let manager = songbird::get(ctx.serenity_context())
         .await
@@ -31,11 +87,27 @@ pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot:
         return Ok(());
     };
 
-    let text = format!("{} dice: {}", ctx.author().display_name(), &text);
+    let raw_text = format!("{} dice: {}", ctx.author().display_name(), &text);
+
+    let resolved = replace_mentions(guild_id, http.clone(), &raw_text).await?;
+
+    let cleaned = replace_patterns!(
+        resolved,
+        [
+            (
+                r"https?://(?:www\.)?[-a-zA-Z0-9@%._+~#=]{2,256}\.[a-z]{2,6}(?:[-a-zA-Z0-9@:%_+.~#?&/=]*)?",
+                |_caps| Cow::Borrowed("enlace")
+            ),
+            (r"<:([a-zA-Z0-9_]+):\d+>", |caps| Cow::Owned(format!(
+                "{}",
+                &caps[1]
+            ))),
+        ]
+    );
 
     let url = format!(
         "https://translate.google.com/translate_tts?client=tw-ob&tl=es&q={}",
-        encode(&text)
+        encode(&cleaned)
     );
 
     info!("requesting {}", url);
