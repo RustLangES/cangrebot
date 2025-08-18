@@ -113,10 +113,9 @@ pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot:
                 r"https?://(?:www\.)?[-a-zA-Z0-9@%._+~#=]{2,256}\.[a-z]{2,6}(?:[-a-zA-Z0-9@:%_+.~#?&/=]*)?",
                 |_caps| Cow::Borrowed("enlace")
             ),
-            (r"<:([a-zA-Z0-9_]+):\d+>", |caps| Cow::Owned(format!(
-                "{}",
-                &caps[1]
-            ))),
+            (r"<:([a-zA-Z0-9_]+):\d+>", |caps| Cow::Owned(
+                (caps[1]).to_string()
+            )),
         ]
     );
 
