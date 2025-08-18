@@ -1,6 +1,6 @@
 use crate::bot;
 use poise::serenity_prelude::futures::future::join_all;
-use poise::serenity_prelude::{self, CreateEmbed, GuildId, Http};
+use poise::serenity_prelude::{self, CreateEmbed, GuildId, Http, UserId};
 use poise::CreateReply;
 use regex::{Captures, Regex};
 use reqwest::Client;
@@ -9,6 +9,12 @@ use songbird::tracks::Track;
 use std::borrow::Cow;
 use std::sync::Arc;
 use urlencoding::encode;
+use uuid::Uuid;
+
+pub struct TtsTrackData {
+    pub uuid: Uuid,
+    pub author_id: UserId,
+}
 
 macro_rules! replace_patterns  {
     ($text:expr, [ $( ($re:expr, |$caps:ident| $body:expr) ),* $(,)? ]) => {{
@@ -120,13 +126,20 @@ pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot:
     );
 
     let client = Client::new();
+    let uuid = Uuid::new_v4();
     for c in split_text(&cleaned, 200) {
         let url = format!(
             "https://translate.google.com/translate_tts?client=tw-ob&tl=es&q={}",
             encode(&c)
         );
         let data = HttpRequest::new(client.clone(), url).clone();
-        let t: Track = Track::new_with_data(data.into(), Arc::new(ctx.author().id));
+        let t: Track = Track::new_with_data(
+            data.into(),
+            Arc::new(TtsTrackData {
+                uuid,
+                author_id: ctx.author().id,
+            }),
+        );
         handler_lock.lock().await.enqueue(t).await;
     }
 
