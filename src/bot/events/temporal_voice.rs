@@ -60,8 +60,8 @@ pub async fn temporal_voice_join(
         data.get::<TempVcStore>().cloned()
     };
 
-    if store_mutex.is_some() {
-        channels_list = { store_mutex.unwrap().lock().await }.to_vec();
+    if let Some(store_mutex) = store_mutex {
+        channels_list = { store_mutex.lock().await }.to_vec();
     }
 
     let builder = CreateChannel::new(format!("🗣-&{}.vc()", member.user.name))
@@ -103,8 +103,8 @@ pub async fn temporal_voice_quit(ctx: &Context, channel: &ChannelId) -> Result<(
         data.get::<TempVcStore>().cloned()
     };
 
-    if store_mutex.is_some() {
-        channels_list = { store_mutex.unwrap().lock().await }.to_vec();
+    if let Some(store_mutex) = store_mutex {
+        channels_list = { store_mutex.lock().await }.to_vec();
     }
 
     let Ok(channel) = channel.to_channel(&ctx).await else {

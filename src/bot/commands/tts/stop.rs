@@ -1,9 +1,7 @@
-use std::ops::Deref;
-use std::sync::Arc;
-
 use crate::bot;
 use poise::serenity_prelude::{ChannelId, CreateEmbed, UserId};
 use poise::CreateReply;
+use std::sync::Arc;
 use tracing::info;
 
 #[poise::command(slash_command, prefix_command, guild_only)]
@@ -35,7 +33,7 @@ pub async fn stop(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
         .ok_or("Failed to get track data")?
         .data();
 
-    let author_id = track_data.deref();
+    let author_id = &*track_data;
     let member = ctx.author_member().await.ok_or("Failed to get member")?;
 
     let guild_channel = ChannelId::new(
