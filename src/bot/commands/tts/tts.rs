@@ -8,7 +8,6 @@ use songbird::input::HttpRequest;
 use songbird::tracks::Track;
 use std::borrow::Cow;
 use std::sync::Arc;
-use tracing::info;
 use urlencoding::encode;
 
 macro_rules! replace_patterns  {
@@ -64,6 +63,22 @@ pub async fn replace_mentions(
     Ok(resolved)
 }
 
+pub fn split_text(s: &str, max_chars: usize) -> Vec<String> {
+    s.split_whitespace().fold(Vec::new(), |mut acc, word| {
+        if let Some(last) = acc.last_mut() {
+            if last.len() + 1 + word.len() <= max_chars {
+                last.push(' ');
+                last.push_str(word);
+            } else {
+                acc.push(word.to_string());
+            }
+        } else {
+            acc.push(word.to_string());
+        }
+        acc
+    })
+}
+
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
     let guild_id = ctx.guild_id().ok_or(".")?;
@@ -105,17 +120,16 @@ pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot:
         ]
     );
 
-    let url = format!(
-        "https://translate.google.com/translate_tts?client=tw-ob&tl=es&q={}",
-        encode(&cleaned)
-    );
-
-    info!("requesting {}", url);
-
-    let data = HttpRequest::new(Client::new(), url).clone();
-    let t: Track = Track::new_with_data(data.into(), Arc::new(ctx.author().id));
-
-    handler_lock.lock().await.enqueue(t).await;
+    let client = Client::new();
+    for c in split_text(&cleaned, 200) {
+        let url = format!(
+            "https://translate.google.com/translate_tts?client=tw-ob&tl=es&q={}",
+            encode(&c)
+        );
+        let data = HttpRequest::new(client.clone(), url).clone();
+        let t: Track = Track::new_with_data(data.into(), Arc::new(ctx.author().id));
+        handler_lock.lock().await.enqueue(t).await;
+    }
 
     ctx.send(
         CreateReply::default().embed(
