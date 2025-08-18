@@ -66,24 +66,29 @@ pub async fn stop(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
 
     ctx.send(CreateReply::default().content("⏭ ")).await?;
 
-    handler.queue().skip()?;
     let c_uuid = track_data.uuid;
-
     handler.queue().modify_queue(|q| {
-        let mut ids: Vec<usize> = q
+        let ids: Vec<usize> = q
             .iter()
             .enumerate()
             .filter_map(|(i, q)| {
                 let data: Arc<TtsTrackData> = q.data();
                 (data.uuid == c_uuid).then_some(i)
             })
+            .rev()
             .collect();
 
-        ids.sort_unstable_by(|a, b| b.cmp(a));
-        for i in ids {
-            q.remove(i);
+        for id in ids {
+            if let Some(track) = q.remove(id) {
+                // Errors when removing tracks don't really make
+                // a difference: an error just implies it's already gone.
+                drop(track.stop())
+            }
         }
     });
+
+    // Errors when no more tracks
+    drop(handler.queue().resume());
 
     Ok(())
 }
