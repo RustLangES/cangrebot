@@ -1,4 +1,5 @@
 use crate::bot;
+use crate::bot::commands::tts::TtsStateExt;
 use poise::serenity_prelude::CreateEmbed;
 use poise::CreateReply;
 
@@ -6,10 +7,13 @@ use poise::CreateReply;
 pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
     let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
 
+    if ctx.data().tts.check_same_channel(&ctx).await? {
+        return Ok(());
+    }
+
     let manager = songbird::get(ctx.serenity_context())
         .await
-        .ok_or("No se pudo obtener el manager de voz")?
-        .clone();
+        .ok_or("No se pudo obtener el manager de voz")?;
 
     if manager.leave(guild_id).await.is_err() {
         ctx.send(
@@ -24,6 +28,8 @@ pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
 
         return Ok(());
     }
+
+    ctx.data().tts.reset().await;
 
     ctx.send(
         CreateReply::default().embed(

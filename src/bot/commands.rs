@@ -11,6 +11,7 @@ mod suggest;
 mod tts;
 
 use super::{Data, Error};
+pub use tts::TtsState;
 
 pub fn commands() -> Vec<poise::Command<Data, Error>> {
     vec![

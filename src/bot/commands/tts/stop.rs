@@ -1,5 +1,6 @@
 use crate::bot;
 use crate::bot::commands::tts::tts::TtsTrackData;
+use crate::bot::commands::tts::TtsStateExt;
 use poise::serenity_prelude::{ChannelId, CreateEmbed};
 use poise::CreateReply;
 use std::sync::Arc;
@@ -7,6 +8,10 @@ use std::sync::Arc;
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn stop(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
     let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
+
+    if ctx.data().tts.check_same_channel(&ctx).await? {
+        return Ok(());
+    }
 
     let manager = songbird::get(ctx.serenity_context())
         .await

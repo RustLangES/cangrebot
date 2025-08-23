@@ -1,4 +1,5 @@
 use crate::bot;
+use crate::bot::commands::tts::TtsStateExt;
 use poise::serenity_prelude::futures::future::join_all;
 use poise::serenity_prelude::{self, CreateEmbed, GuildId, Http, UserId};
 use poise::CreateReply;
@@ -89,6 +90,10 @@ pub fn split_text(s: &str, max_chars: usize) -> Vec<String> {
 pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
     let guild_id = ctx.guild_id().ok_or(".")?;
     let http = ctx.serenity_context().http.clone();
+
+    if ctx.data().tts.check_same_channel(&ctx).await? {
+        return Ok(());
+    }
 
     let manager = songbird::get(ctx.serenity_context())
         .await
