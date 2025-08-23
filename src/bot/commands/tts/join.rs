@@ -1,4 +1,5 @@
 use crate::bot;
+use crate::bot::commands::tts::TtsStateExt;
 use poise::serenity_prelude::CreateEmbed;
 use poise::CreateReply;
 
@@ -34,6 +35,8 @@ pub async fn join(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
 
     match manager.join(guild_id, target_channel).await {
         Ok(_) => {
+            ctx.data().tts.join(target_channel).await;
+
             ctx.send(
                 CreateReply::default().embed(
                     CreateEmbed::new()

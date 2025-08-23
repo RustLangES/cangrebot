@@ -5,14 +5,16 @@ mod util;
 use anyhow::anyhow;
 use poise::serenity_prelude::{futures::TryFutureExt, GuildId};
 use songbird::SerenityInit;
+use tokio::sync::Mutex;
 use tracing::info;
 
 use crate::{serenity, CangrebotSecrets};
 
-use commands::commands;
+use commands::{commands, TtsState};
 
 pub(super) struct Data {
     secrets: CangrebotSecrets,
+    tts: Mutex<TtsState>,
 }
 
 pub(super) type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -71,6 +73,7 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
 
                 Ok(Data {
                     secrets: data_secrets,
+                    tts: Mutex::new(TtsState::default()),
                 })
             })
         })
