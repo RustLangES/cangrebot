@@ -1,6 +1,6 @@
 use std::fmt::Write;
 
-use poise::serenity_prelude::{Color, CreateEmbed};
+use poise::serenity_prelude::{Color, Command, CreateEmbed};
 use poise::CreateReply;
 
 use crate::bot;
@@ -44,12 +44,22 @@ pub async fn wipe_commands(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
         .await?;
 
     let commands = guild_id.get_commands(ctx).await?;
+    let global_commands = Command::get_global_commands(ctx).await?;
     let n_commands = commands.len();
+    let n_global_commands = global_commands.len();
+    let total_commands = n_commands + n_global_commands;
     let commands_list = commands.iter().fold(String::new(), |mut buf, command| {
-        _ = writeln!(buf, "- {}", command.name);
+        _ = writeln!(buf, "- (guild) {}", command.name);
 
         buf
     });
+    let commands_list = global_commands
+        .iter()
+        .fold(commands_list, |mut buf, command| {
+            _ = writeln!(buf, "- (global) {}", command.name);
+
+            buf
+        });
 
     reply
         .edit(
@@ -57,7 +67,7 @@ pub async fn wipe_commands(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
             CreateReply::default().embed(
                 CreateEmbed::default()
                     .title("Running")
-                    .description(format_progress(0, n_commands))
+                    .description(format_progress(0, total_commands))
                     .color(Color::BLURPLE),
             ),
         )
@@ -72,7 +82,23 @@ pub async fn wipe_commands(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
                 CreateReply::default().embed(
                     CreateEmbed::default()
                         .title("Running")
-                        .description(format_progress(command_idx, n_commands))
+                        .description(format_progress(command_idx, total_commands))
+                        .color(Color::BLURPLE),
+                ),
+            )
+            .await?;
+    }
+
+    for (command_idx, command) in global_commands.into_iter().enumerate() {
+        Command::delete_global_command(ctx, command.id).await?;
+
+        reply
+            .edit(
+                ctx,
+                CreateReply::default().embed(
+                    CreateEmbed::default()
+                        .title("Running")
+                        .description(format_progress(command_idx + n_commands, total_commands))
                         .color(Color::BLURPLE),
                 ),
             )
@@ -84,7 +110,7 @@ pub async fn wipe_commands(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
             ctx,
             CreateReply::default().embed(
                 CreateEmbed::default()
-                    .title(format!("{n_commands} commands deleted"))
+                    .title(format!("{total_commands} commands deleted"))
                     .description(commands_list)
                     .color(Color::BLURPLE),
             ),
