@@ -77,6 +77,7 @@ pub async fn handle(
             }
             if let Some(old) = old {
                 temporal_voice_quit(ctx, &old.channel_id.unwrap()).await?;
+                tts::quit(ctx, guild_id, old, data).await?;
             }
         }
         _ => {}

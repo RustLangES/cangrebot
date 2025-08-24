@@ -55,3 +55,38 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
 
     Ok(false)
 }
+
+pub async fn quit(
+    ctx: &Context,
+    guild_id: &GuildId,
+    state: &VoiceState,
+    data: &bot::Data,
+) -> Result<(), bot::Error> {
+    if state.channel_id != data.tts.active_channel().await {
+        return Ok(());
+    }
+
+    data.tts.end(&state.user_id).await;
+
+    // Maybe we can move this to another module
+    let channel_members = state
+        .channel_id
+        .unwrap()
+        .to_channel(ctx)
+        .await?
+        .guild()
+        .ok_or("Cannot get guild channel")?
+        .members(ctx)?
+        .len();
+
+    // I'm alone, very alone, just alone, my alone, our alone
+    if channel_members == 1 {
+        songbird::get(ctx)
+            .await
+            .ok_or("Cannot get songbird manager")?
+            .leave(*guild_id)
+            .await?;
+    }
+
+    Ok(())
+}
