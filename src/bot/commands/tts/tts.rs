@@ -5,13 +5,7 @@ use crate::bot;
 use crate::bot::commands::tts::TtsStateExt;
 use crate::bot::commands::TtsState;
 
-#[poise::command(
-    slash_command,
-    prefix_command,
-    guild_only,
-    subcommands("super::begin::begin", "super::end::end")
-)]
-pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
+async fn tts_play(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error> {
     let guild_id = ctx.guild_id().ok_or(".")?;
     let http = ctx.serenity_context().http.clone();
 
@@ -75,4 +69,19 @@ pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot:
     .await?;
 
     Ok(())
+}
+
+#[poise::command(
+    slash_command,
+    prefix_command,
+    guild_only,
+    subcommands("super::begin::begin", "super::end::end", "play")
+)]
+pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
+    tts_play(ctx, text).await
+}
+
+#[poise::command(slash_command, guild_only)]
+async fn play(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
+    tts_play(ctx, text).await
 }
