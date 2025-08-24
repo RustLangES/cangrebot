@@ -1,3 +1,4 @@
+use super::main_fixer::fix_main_entry;
 use super::{request::BaseCompilerRequest, response::CompilerResponse, versions::OptionalVersion};
 use poise::serenity_prelude::MESSAGE_CODE_LIMIT;
 use reqwest::{Client as HttpClient, Error as ReqwestError};
@@ -112,6 +113,8 @@ impl GodBoltCompiler {
         if !execute && !self.supports_binary {
             return Err(GodBoltError::InvalidOperation("compilation".into()));
         }
+
+        let code = &fix_main_entry(&self.language, code);
 
         let response = BaseCompilerRequest::gen_req(code, user_args, execute)
             .into_request(&self.id)
