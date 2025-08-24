@@ -19,6 +19,23 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
 
     let guild_id = msg.guild_id.ok_or("No se pudo obtener el guild")?;
 
+    let guild_channel = msg
+        .channel(ctx)
+        .await?
+        .guild()
+        .ok_or("Not a guild channel")?;
+
+    let member = msg.member(ctx).await?;
+
+    let perms = msg
+        .guild(ctx.as_ref())
+        .ok_or("Not in a guild")?
+        .user_permissions_in(&guild_channel, &member);
+
+    if !perms.speak() {
+        return Ok(false);
+    }
+
     let manager = songbird::get(ctx)
         .await
         .ok_or("No se pudo obtener el manager de voz")?

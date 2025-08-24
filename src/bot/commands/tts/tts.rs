@@ -19,6 +19,29 @@ pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot:
         return Ok(());
     }
 
+    let guild_channel = ctx.guild_channel().await.ok_or("Not a guild channel")?;
+
+    let member = ctx.author_member().await.ok_or("Not a guild member")?;
+
+    let perms = ctx
+        .guild()
+        .ok_or("Not in a guild")?
+        .user_permissions_in(&guild_channel, member.as_ref());
+
+    if !perms.speak() {
+        ctx.send(
+            CreateReply::default().embed(
+                CreateEmbed::new()
+                    .title("Error")
+                    .description("No tienes permiso de utilizar este comando")
+                    .color(0x00FF_0000),
+            ),
+        )
+        .await?;
+
+        return Ok(());
+    }
+
     let manager = songbird::get(ctx.serenity_context())
         .await
         .ok_or("No se pudo obtener el manager de voz")?
