@@ -9,6 +9,7 @@ mod selftimeout;
 mod stats;
 mod suggest;
 mod tts;
+mod wipe_commands;
 
 use super::{Data, Error};
 pub use tts::{TtsState, TtsStateExt};
@@ -31,5 +32,6 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         tts::leave::leave(),
         tts::tts::tts(),
         tts::stop::stop(),
+        wipe_commands::wipe_commands(),
     ]
 }
