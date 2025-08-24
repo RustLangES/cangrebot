@@ -4,6 +4,7 @@ mod join;
 mod new_members_mention;
 mod read_github_links;
 pub mod temporal_voice;
+mod tts;
 
 use poise::serenity_prelude::{ChannelId, Context, FullEvent, GuildId};
 use poise::FrameworkContext;
@@ -30,6 +31,7 @@ pub async fn handle(
                 || read_github_links::message(ctx, new_message).await
                 || temporal_voice::message(ctx, new_message, ChannelId::new(secrets.temporal_logs))
                     .await?
+                || tts::message(ctx, new_message, data).await?
             {
                 return Ok(());
             }

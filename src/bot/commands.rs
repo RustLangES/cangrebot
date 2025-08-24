@@ -11,10 +11,11 @@ mod suggest;
 mod tts;
 
 use super::{Data, Error};
-pub use tts::TtsState;
+pub use tts::{TtsState, TtsStateExt};
 
 pub fn commands() -> Vec<poise::Command<Data, Error>> {
     vec![
+        ask::ask(),
         crate_docs::docs(),
         explain::explain(),
         help::help(),
@@ -26,7 +27,6 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         suggest::cancelled::sugerencia_cancelada(),
         //stats::send_stats(), TODO: Removed for now
         selftimeout::selftimeout(),
-        ask::ask(),
         tts::join::join(),
         tts::leave::leave(),
         tts::tts::tts(),

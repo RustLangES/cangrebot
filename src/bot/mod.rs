@@ -66,9 +66,8 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
                 )
                 .await;
                 commands::ask::setup_gemini(ctx, data_secrets.gemini_key.clone()).await;
+
                 let commands = &framework.options().commands;
-                #[cfg(debug_assertions)]
-                poise::builtins::register_globally(ctx, commands).await?;
                 poise::builtins::register_in_guild(ctx, commands, guild_id).await?;
 
                 Ok(Data {

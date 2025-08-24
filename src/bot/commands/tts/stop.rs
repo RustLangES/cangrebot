@@ -1,6 +1,5 @@
 use crate::bot;
-use crate::bot::commands::tts::tts::TtsTrackData;
-use crate::bot::commands::tts::TtsStateExt;
+use crate::bot::commands::tts::{TtsStateExt, TtsTrackData};
 use poise::serenity_prelude::{ChannelId, CreateEmbed};
 use poise::CreateReply;
 use std::sync::Arc;
