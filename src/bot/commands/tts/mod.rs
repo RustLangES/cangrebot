@@ -1,6 +1,6 @@
 use std::borrow::Cow;
 use std::collections::HashSet;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 
 use poise::serenity_prelude::futures::future::join_all;
 use poise::serenity_prelude::{self, ChannelId, CreateEmbed, GuildId, Http, UserId};
@@ -32,12 +32,12 @@ struct TtsTrackData {
 macro_rules! replace_patterns  {
     ($text:expr, [ $( ($re:expr, |$caps:ident| $body:expr) ),* $(,)? ]) => {{
         let mut result = $text.to_string();
-        $(
-            let re = Regex::new($re).expect("regex inválido");
-            result = re.replace_all(&result, |$caps: &Captures| -> Cow<str> {
+        $({
+            const REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new($re).expect("valid regex"));
+            result = REGEX.replace_all(&result, |$caps: &Captures| -> Cow<str> {
                 $body
             }).into_owned();
-        )*
+        })*
         result
     }};
 }
