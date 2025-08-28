@@ -107,6 +107,10 @@ pub async fn quit(
             .ok_or("Cannot get songbird manager")?
             .leave(*guild_id)
             .await?;
+
+        let channel_id = state.channel_id.unwrap();
+
+        channel_id.say(ctx, "No sé, me quede solo, supongo que me iré..").await?;
     }
 
     Ok(())
