@@ -1,5 +1,5 @@
 use crate::bot::util::send_multiple;
-use poise::serenity_prelude::{CacheHttp, Context, EmojiId, Message, ReactionType};
+use poise::serenity_prelude::{Context, EmojiId, Message, ReactionType};
 
 use super::godbolt::parse_args::{DiscordCompilerCommand, DiscordCompilerOutput};
 
