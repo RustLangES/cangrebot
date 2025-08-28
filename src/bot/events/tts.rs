@@ -59,7 +59,11 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
         return Ok(true);
     };
 
-    let raw_text = format!("{} dice: {}", msg.author.display_name(), &msg.content);
+    let raw_text = if data.tts.active_users().await == 1 {
+        &msg.content
+    } else {
+        &format!("{} dice: {}", msg.author.display_name(), &msg.content)
+    };
 
     TtsState::send_tts(
         guild_id,

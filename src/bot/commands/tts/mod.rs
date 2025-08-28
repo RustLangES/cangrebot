@@ -100,6 +100,7 @@ fn split_text(s: &str, max_chars: usize) -> Vec<String> {
 
 pub trait TtsStateExt {
     async fn active_channel(&self) -> Option<ChannelId>;
+    async fn active_users(&self) -> usize;
     async fn begin(&self, user_id: UserId);
     async fn end(&self, user_id: &UserId);
     async fn is_active_user(&self, user_id: &UserId) -> bool;
@@ -111,6 +112,10 @@ pub trait TtsStateExt {
 impl TtsStateExt for Mutex<TtsState> {
     async fn active_channel(&self) -> Option<ChannelId> {
         self.lock().await.active_channel
+    }
+
+    async fn active_users(&self) -> usize {
+        self.lock().await.active_users.len()
     }
 
     async fn begin(&self, user_id: UserId) {
