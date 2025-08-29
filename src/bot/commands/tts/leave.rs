@@ -6,16 +6,13 @@ use poise::CreateReply;
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
     let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
+    let tts = &ctx.data().tts;
 
-    if ctx.data().tts.check_same_channel(&ctx).await? {
+    if tts.check_same_channel(&ctx).await? {
         return Ok(());
     }
 
-    let manager = songbird::get(ctx.serenity_context())
-        .await
-        .ok_or("No se pudo obtener el manager de voz")?;
-
-    if manager.leave(guild_id).await.is_err() {
+    if tts.leave(ctx.serenity_context(), guild_id).await.is_err() {
         ctx.send(
             CreateReply::default().embed(
                 CreateEmbed::new()
@@ -28,8 +25,6 @@ pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
 
         return Ok(());
     }
-
-    ctx.data().tts.reset().await;
 
     ctx.send(
         CreateReply::default().embed(

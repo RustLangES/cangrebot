@@ -28,10 +28,7 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         suggest::cancelled::sugerencia_cancelada(),
         //stats::send_stats(), TODO: Removed for now
         selftimeout::selftimeout(),
-        tts::join::join(),
-        tts::leave::leave(),
         tts::tts::tts(),
-        tts::stop::stop(),
         wipe_commands::wipe_commands(),
     ]
 }
