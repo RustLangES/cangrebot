@@ -2,10 +2,18 @@ use poise::serenity_prelude::{Color, CreateEmbed, CreateEmbedFooter, UserId};
 use poise::CreateReply;
 
 use crate::bot;
-use crate::bot::commands::TtsStateExt;
+use crate::bot::commands::{TtsState, TtsStateExt};
 
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn begin(ctx: bot::Context<'_>, user: Option<UserId>) -> Result<(), bot::Error> {
+    let guild_id = ctx.guild_id().expect("This command is for guild only");
+
+    if ctx.data().tts.active_channel().await.is_none() {
+        if TtsState::join_vc(ctx.serenity_context(), guild_id, ctx.channel_id()).await? {
+            ctx.data().tts.join(ctx.channel_id()).await;
+        }
+    }
+
     if ctx.data().tts.check_same_channel(&ctx).await? {
         return Ok(());
     };

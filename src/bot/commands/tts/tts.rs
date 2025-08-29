@@ -9,6 +9,12 @@ async fn tts_play(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error>
     let guild_id = ctx.guild_id().ok_or(".")?;
     let http = ctx.serenity_context().http.clone();
 
+    if ctx.data().tts.active_channel().await.is_none() {
+        if TtsState::join_vc(ctx.serenity_context(), guild_id, ctx.channel_id()).await? {
+            ctx.data().tts.join(ctx.channel_id()).await;
+        }
+    }
+
     if ctx.data().tts.check_same_channel(&ctx).await? {
         return Ok(());
     }
@@ -41,18 +47,9 @@ async fn tts_play(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error>
         .ok_or("No se pudo obtener el manager de voz")?
         .clone();
 
-    let Some(handler_lock) = manager.get(guild_id) else {
-        ctx.send(
-            CreateReply::default().embed(
-                CreateEmbed::new()
-                    .title("Error")
-                    .description("No estoy en ningún canal de voz. Usa /join primero.")
-                    .color(0x00FF_0000),
-            ),
-        )
-        .await?;
-        return Ok(());
-    };
+    let handler_lock = manager
+        .get(guild_id)
+        .expect("asserted by check_same_channel");
 
     let raw_text = format!("{} dice: {}", ctx.author().display_name(), &text);
 
