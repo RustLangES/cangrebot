@@ -166,6 +166,8 @@ pub async fn quit(
         channel_id
             .say(ctx, "Me retiro, veo que ya no me necesitan\n-# Aún me puedo unir si haces `/tts begin` o `/tts play`")
             .await?;
+
+        return Ok(());
     }
 
     // Maybe we can move this to another module
