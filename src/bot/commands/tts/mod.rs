@@ -227,6 +227,23 @@ impl TtsState {
         Ok(false)
     }
 
+    pub async fn join_vc(
+        ctx: &poise::serenity_prelude::Context,
+        guild_id: GuildId,
+        channel_id: ChannelId,
+    ) -> Result<bool, bot::Error> {
+        let manager = songbird::get(ctx)
+            .await
+            .ok_or("No se pudo obtener el manager de voz")?
+            .clone();
+
+        Ok(manager
+            .join(guild_id, channel_id)
+            .await
+            .inspect_err(|err| eprintln!("[TTS] Join error: {err}"))
+            .is_ok())
+    }
+
     pub async fn send_tts(
         guild_id: GuildId,
         http: Arc<Http>,
