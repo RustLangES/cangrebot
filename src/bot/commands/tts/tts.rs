@@ -68,11 +68,14 @@ async fn tts_play(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error>
     Ok(())
 }
 
+// Import all subcommands
+use super::*;
+
 #[poise::command(
     slash_command,
     prefix_command,
     guild_only,
-    subcommands("super::begin::begin", "super::end::end", "play")
+    subcommands("begin::begin", "end::end", "leave::leave", "skip::skip", "play")
 )]
 pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
     tts_play(ctx, text).await

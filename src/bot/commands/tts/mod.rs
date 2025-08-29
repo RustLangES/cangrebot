@@ -18,9 +18,8 @@ use crate::bot;
 
 pub mod begin;
 pub mod end;
-pub mod join;
 pub mod leave;
-pub mod stop;
+pub mod skip;
 #[allow(clippy::module_inception)]
 pub mod tts;
 

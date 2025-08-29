@@ -5,7 +5,7 @@ use poise::CreateReply;
 use std::sync::Arc;
 
 #[poise::command(slash_command, prefix_command, guild_only)]
-pub async fn stop(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
+pub async fn skip(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
     let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
 
     if ctx.data().tts.check_same_channel(&ctx).await? {
