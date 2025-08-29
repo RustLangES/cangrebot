@@ -32,7 +32,7 @@ macro_rules! replace_patterns  {
     ($text:expr, [ $( ($re:expr, |$caps:ident| $body:expr) ),* $(,)? ]) => {{
         let mut result = $text.to_string();
         $({
-            const REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new($re).expect("valid regex"));
+            static REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new($re).expect("valid regex"));
             result = REGEX.replace_all(&result, |$caps: &Captures| -> Cow<str> {
                 $body
             }).into_owned();

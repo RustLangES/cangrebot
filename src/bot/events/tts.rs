@@ -74,7 +74,7 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
         ctx.http.clone(),
         &handler_lock,
         msg.author.id,
-        &raw_text,
+        raw_text,
     )
     .await?;
 
