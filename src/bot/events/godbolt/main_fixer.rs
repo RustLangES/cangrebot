@@ -75,9 +75,9 @@ pub fn fix_main_entry(language: &str, code: &str) -> String {
         return code.to_owned();
     };
 
-    if regex.is_match(&code) {
+    if regex.is_match(code) {
         return code.to_owned();
     }
 
-    tmpl.replace("{code}", &code)
+    tmpl.replace("{code}", code)
 }

@@ -9,10 +9,10 @@ async fn tts_play(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error>
     let guild_id = ctx.guild_id().ok_or(".")?;
     let http = ctx.serenity_context().http.clone();
 
-    if ctx.data().tts.active_channel().await.is_none() {
-        if TtsState::join_vc(ctx.serenity_context(), guild_id, ctx.channel_id()).await? {
-            ctx.data().tts.join(ctx.channel_id()).await;
-        }
+    if ctx.data().tts.active_channel().await.is_none()
+        && TtsState::join_vc(ctx.serenity_context(), guild_id, ctx.channel_id()).await?
+    {
+        ctx.data().tts.join(ctx.channel_id()).await;
     }
 
     if ctx.data().tts.check_same_channel(&ctx).await? {
