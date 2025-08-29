@@ -73,6 +73,8 @@ pub async fn handle(
             if let Some(channel_id) = new.channel_id {
                 if channel_id == ChannelId::new(secrets.temporal_wait) {
                     temporal_voice_join(ctx, member, guild_id, secrets.temporal_category).await?;
+                } else {
+                    tts::join(ctx, member, guild_id, channel_id, data).await?;
                 }
             }
             if let Some(old) = old {

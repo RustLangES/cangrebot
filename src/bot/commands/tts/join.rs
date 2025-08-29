@@ -1,5 +1,6 @@
 use crate::bot;
 use crate::bot::commands::tts::TtsStateExt;
+use crate::bot::commands::TtsState;
 use poise::serenity_prelude::CreateEmbed;
 use poise::CreateReply;
 
@@ -28,36 +29,28 @@ pub async fn join(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
         return Ok(());
     };
 
-    let manager = songbird::get(ctx.serenity_context())
-        .await
-        .ok_or("No se pudo obtener el manager de voz")?
-        .clone();
+    if TtsState::join_vc(ctx.serenity_context(), guild_id, target_channel).await? {
+        ctx.data().tts.join(target_channel).await;
 
-    match manager.join(guild_id, target_channel).await {
-        Ok(_) => {
-            ctx.data().tts.join(target_channel).await;
-
-            ctx.send(
-                CreateReply::default().embed(
-                    CreateEmbed::new()
-                        .title("Conectado")
-                        .description("Me uní al canal de voz correctamente.")
-                        .color(0x0000_FF00),
-                ),
-            )
-            .await?;
-        }
-        Err(_) => {
-            ctx.send(
-                CreateReply::default().embed(
-                    CreateEmbed::new()
-                        .title("Error")
-                        .description("No se pudo unir al canal de voz. Revisa mis permisos.")
-                        .color(0x00FF_0000),
-                ),
-            )
-            .await?;
-        }
+        ctx.send(
+            CreateReply::default().embed(
+                CreateEmbed::new()
+                    .title("Conectado")
+                    .description("Me uní al canal de voz correctamente.")
+                    .color(0x0000_FF00),
+            ),
+        )
+        .await?;
+    } else {
+        ctx.send(
+            CreateReply::default().embed(
+                CreateEmbed::new()
+                    .title("Error")
+                    .description("No se pudo unir al canal de voz. Revisa mis permisos.")
+                    .color(0x00FF_0000),
+            ),
+        )
+        .await?;
     }
 
     Ok(())

@@ -1,8 +1,12 @@
-use poise::serenity_prelude::{Context, CreateEmbed, GuildId, Message, VoiceState};
+use poise::serenity_prelude::{
+    ChannelId, Context, CreateEmbed, GuildId, Member, Message, RoleId, VoiceState,
+};
 use poise::CreateReply;
 
 use crate::bot;
 use crate::bot::commands::{TtsState, TtsStateExt};
+
+const DEFAULT_TTS_ROLE: RoleId = RoleId::new(1410740555385802784);
 
 pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<bool, bot::Error> {
     let Some(call_channel) = data.tts.active_channel().await else {
@@ -77,6 +81,69 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
     Ok(false)
 }
 
+pub async fn join(
+    ctx: &Context,
+    member: &Member,
+    guild_id: &GuildId,
+    channel_id: ChannelId,
+    data: &bot::Data,
+) -> Result<(), bot::Error> {
+    match data.tts.active_channel().await {
+        Some(id) if id == channel_id && member.roles.contains(&DEFAULT_TTS_ROLE) => {
+            // Bot is already in vc
+            data.tts.begin(member.user.id).await;
+        }
+        Some(_) => { /* In another vc or new user doesn't require tts */ }
+        None => {
+            // Could join bot
+
+            let vc_members = channel_id
+                .to_channel(ctx)
+                .await?
+                .guild()
+                .expect("This bot is for guilds")
+                .members(ctx)?;
+
+            let (non_tts_members, tts_members) = vc_members
+                .into_iter()
+                .filter(|member| !member.user.bot)
+                .map(|member| (member.roles.contains(&DEFAULT_TTS_ROLE), member.user.id))
+                .fold(
+                    (Vec::new(), Vec::new()),
+                    |(mut non_tts, mut tts), (is_tts, member_id)| {
+                        if is_tts {
+                            tts.push(member_id);
+                        } else {
+                            non_tts.push(member_id);
+                        }
+
+                        (non_tts, tts)
+                    },
+                );
+
+            let should_join = non_tts_members.len() + tts_members.len() > 1;
+
+            if !should_join {
+                return Ok(());
+            }
+
+            if !TtsState::join_vc(ctx, *guild_id, channel_id).await? {
+                return Ok(());
+            }
+
+            let mut tts = data.tts.lock().await;
+
+            tts.join(channel_id);
+
+            for member in tts_members {
+                tts.begin(member);
+            }
+        }
+    }
+
+    Ok(())
+}
+
 pub async fn quit(
     ctx: &Context,
     guild_id: &GuildId,
@@ -110,7 +177,9 @@ pub async fn quit(
 
         let channel_id = state.channel_id.unwrap();
 
-        channel_id.say(ctx, "No sé, me quede solo, supongo que me iré..").await?;
+        channel_id
+            .say(ctx, "No sé, me quede solo, supongo que me iré..")
+            .await?;
     }
 
     Ok(())
