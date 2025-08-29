@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use std::sync::{Arc, LazyLock};
 
 use poise::serenity_prelude::futures::future::join_all;
-use poise::serenity_prelude::{self, ChannelId, CreateEmbed, GuildId, Http, UserId};
+use poise::serenity_prelude::{self as serenity, ChannelId, CreateEmbed, GuildId, Http, UserId};
 use poise::CreateReply;
 use regex::{Captures, Regex};
 use reqwest::Client;
@@ -46,7 +46,7 @@ async fn replace_mentions(
     guild_id: GuildId,
     http: Arc<Http>,
     raw_text: &str,
-) -> Result<String, serenity_prelude::Error> {
+) -> Result<String, serenity::Error> {
     let mention_re = Regex::new(r"<@(\d+)>").unwrap();
     let mut resolved = String::with_capacity(raw_text.len());
     let mut last_end = 0;
@@ -65,7 +65,7 @@ async fn replace_mentions(
         let http = http.clone();
         async move {
             let member = guild_id.member(&http, *id).await?;
-            Ok::<_, serenity_prelude::Error>(member.display_name().to_string())
+            Ok::<_, serenity::Error>(member.display_name().to_string())
         }
     });
 
@@ -102,10 +102,10 @@ pub trait TtsStateExt {
     async fn active_channel(&self) -> Option<ChannelId>;
     async fn active_users(&self) -> usize;
     async fn begin(&self, user_id: UserId);
-    async fn end(&self, user_id: &UserId);
+    async fn end(&self, user_id: &UserId) -> bool;
     async fn is_active_user(&self, user_id: &UserId) -> bool;
-    async fn reset(&self);
     async fn join(&self, channel: ChannelId);
+    async fn leave(&self, ctx: &serenity::Context, guild_id: GuildId) -> Result<(), bot::Error>;
     async fn check_same_channel(&self, ctx: &bot::Context<'_>) -> Result<bool, bot::Error>;
 }
 
@@ -122,20 +122,20 @@ impl TtsStateExt for Mutex<TtsState> {
         self.lock().await.begin(user_id);
     }
 
-    async fn end(&self, user_id: &UserId) {
-        self.lock().await.end(user_id);
+    async fn end(&self, user_id: &UserId) -> bool {
+        self.lock().await.end(user_id)
     }
 
     async fn is_active_user(&self, user_id: &UserId) -> bool {
         self.lock().await.is_active_user(user_id)
     }
 
-    async fn reset(&self) {
-        self.lock().await.reset();
-    }
-
     async fn join(&self, channel: ChannelId) {
         self.lock().await.join(channel);
+    }
+
+    async fn leave(&self, ctx: &serenity::Context, guild_id: GuildId) -> Result<(), bot::Error> {
+        self.lock().await.leave(ctx, guild_id).await
     }
 
     async fn check_same_channel(&self, ctx: &bot::Context<'_>) -> Result<bool, bot::Error> {
@@ -159,12 +159,28 @@ impl TtsState {
         _ = self.active_channel.replace(channel)
     }
 
+    async fn leave(
+        &mut self,
+        ctx: &serenity::Context,
+        guild_id: GuildId,
+    ) -> Result<(), bot::Error> {
+        songbird::get(ctx)
+            .await
+            .ok_or("Cannot get songbird manager")?
+            .leave(guild_id)
+            .await?;
+
+        self.reset();
+
+        Ok(())
+    }
+
     pub fn begin(&mut self, user_id: UserId) {
         _ = self.active_users.insert(user_id)
     }
 
-    pub fn end(&mut self, user_id: &UserId) {
-        _ = self.active_users.remove(user_id)
+    pub fn end(&mut self, user_id: &UserId) -> bool {
+        self.active_users.remove(user_id)
     }
 
     pub fn is_active_user(&self, user_id: &UserId) -> bool {
