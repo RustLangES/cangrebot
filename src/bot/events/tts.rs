@@ -154,7 +154,19 @@ pub async fn quit(
         return Ok(());
     }
 
-    data.tts.end(&state.user_id).await;
+    if !data.tts.end(&state.user_id).await {
+        return Ok(());
+    }
+
+    if data.tts.active_users().await == 0 {
+        data.tts.leave(ctx, *guild_id).await?;
+
+        let channel_id = state.channel_id.unwrap();
+
+        channel_id
+            .say(ctx, "Me retiro, veo que ya no me necesitan\n-# Aún me puedo unir si haces `/tts begin` o `/tts play`")
+            .await?;
+    }
 
     // Maybe we can move this to another module
     let channel_members = state
@@ -169,11 +181,7 @@ pub async fn quit(
 
     // I'm alone, very alone, just alone, my alone, our alone
     if channel_members == 1 {
-        songbird::get(ctx)
-            .await
-            .ok_or("Cannot get songbird manager")?
-            .leave(*guild_id)
-            .await?;
+        data.tts.leave(ctx, *guild_id).await?;
 
         let channel_id = state.channel_id.unwrap();
 
