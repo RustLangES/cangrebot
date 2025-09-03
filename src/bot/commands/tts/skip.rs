@@ -8,7 +8,7 @@ use std::sync::Arc;
 pub async fn skip(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
     let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
 
-    if ctx.data().tts.check_same_channel(&ctx).await? {
+    if !ctx.data().tts.check_same_channel(&ctx).await? {
         return Ok(());
     }
 

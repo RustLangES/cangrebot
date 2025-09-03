@@ -14,7 +14,7 @@ pub async fn begin(ctx: bot::Context<'_>, user: Option<UserId>) -> Result<(), bo
         ctx.data().tts.join(ctx.channel_id()).await;
     }
 
-    if ctx.data().tts.check_same_channel(&ctx).await? {
+    if !ctx.data().tts.check_same_channel(&ctx).await? {
         return Ok(());
     };
 

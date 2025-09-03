@@ -8,7 +8,7 @@ pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {
     let guild_id = ctx.guild().ok_or("No se pudo obtener el guild")?.id;
     let tts = &ctx.data().tts;
 
-    if tts.check_same_channel(&ctx).await? {
+    if !tts.check_same_channel(&ctx).await? {
         return Ok(());
     }
 
