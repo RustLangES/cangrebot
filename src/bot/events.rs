@@ -6,13 +6,38 @@ mod read_github_links;
 pub mod temporal_voice;
 mod tts;
 
-use poise::serenity_prelude::{ChannelId, Context, FullEvent, GuildId};
+use poise::serenity_prelude::{ChannelId, Context, FullEvent, GuildId, Member, VoiceState};
 use poise::FrameworkContext;
 use temporal_voice::{temporal_voice_join, temporal_voice_quit};
 use tracing::info;
 
 use crate::bot::{self, Data};
 use crate::CangrebotSecrets;
+
+#[expect(dead_code, reason = "Maybe it is useful in the future")]
+enum VoiceChange<'a> {
+    Join {
+        member: &'a Member,
+
+        state: &'a VoiceState,
+        channel_id: ChannelId,
+    },
+    Move {
+        member: &'a Member,
+
+        new: &'a VoiceState,
+        new_channel_id: ChannelId,
+
+        old: &'a VoiceState,
+        old_channel_id: ChannelId,
+    },
+    Quit {
+        member: &'a Member,
+
+        state: &'a VoiceState,
+        channel_id: ChannelId,
+    },
+}
 
 pub async fn handle(
     ctx: &Context,
@@ -71,31 +96,75 @@ pub async fn handle(
                 return Ok(());
             };
 
-            if let Some(channel_id) = new.channel_id {
-                let has_moved = old
-                    .as_ref()
-                    .and_then(|old| old.channel_id.as_ref())
-                    .is_some_and(|old| old != &channel_id);
+            let old = old.as_ref().and_then(|old| Some((old, old.channel_id?)));
 
-                if has_moved && member.user.id == fm.bot_id {
-                    tts::moved(ctx, channel_id, data).await?;
-
-                    return Ok(());
+            let change = match (old, new.channel_id) {
+                // Join
+                (None, Some(channel_id)) => {
+                    VoiceChange::Join {
+                        member,
+                        state: new,
+                        channel_id
+                    }
                 }
 
-                if channel_id == ChannelId::new(secrets.temporal_wait) {
+                // Move
+                (Some((old, old_channel_id)), Some(new_channel_id)) if old_channel_id != new_channel_id => {
+                    VoiceChange::Move {
+                        member,
+                        old,
+                        old_channel_id,
+                        new,
+                        new_channel_id
+                    }
+                }
+
+                // Quit
+                (Some((old, old_channel)), None) => {
+                    VoiceChange::Quit {
+                        member,
+                        state: old,
+                        channel_id: old_channel
+                    }
+                }
+
+                // Any other voice state update
+                (Some(_), Some(_)) => return Ok(()),
+
+                // Impossible
+                (None, None) => unreachable!("If old and new state are none, it means that the user has no interaction with vc ")
+            };
+
+            match change {
+                VoiceChange::Move {
+                    member,
+                    new_channel_id: channel_id,
+                    ..
+                }
+                | VoiceChange::Join {
+                    member, channel_id, ..
+                } if channel_id == ChannelId::new(secrets.temporal_wait) => {
                     temporal_voice_join(ctx, member, guild_id, secrets.temporal_category).await?;
-                } else {
+                }
+
+                VoiceChange::Move { new_channel_id, .. } if member.user.id == fm.bot_id => {
+                    tts::moved(ctx, new_channel_id, data).await?;
+                }
+
+                VoiceChange::Move {
+                    new_channel_id: channel_id,
+                    ..
+                }
+                | VoiceChange::Join { channel_id, .. } => {
                     tts::join(ctx, member, guild_id, channel_id, data).await?;
                 }
 
-                return Ok(());
-            }
-
-            if let Some(old) = old {
-                temporal_voice_quit(ctx, &old.channel_id.unwrap()).await?;
-                tts::quit(ctx, fm.bot_id, guild_id, old, data).await?;
-                return Ok(());
+                VoiceChange::Quit {
+                    state, channel_id, ..
+                } => {
+                    temporal_voice_quit(ctx, &channel_id).await?;
+                    tts::quit(ctx, fm.bot_id, guild_id, state, data).await?;
+                }
             }
 
             Ok(())
