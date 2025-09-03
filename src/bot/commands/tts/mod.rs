@@ -188,6 +188,22 @@ impl TtsState {
 
     // Returns false if needs to early return
     pub async fn check_same_channel(&self, ctx: &bot::Context<'_>) -> Result<bool, bot::Error> {
+        let member = ctx.author_member().await.ok_or("Failed to get member")?;
+        let guild_channel = ctx
+            .guild_channel()
+            .await
+            .ok_or("Failed to get guild channel")?;
+
+        let perms = ctx
+            .guild()
+            .ok_or("Not in a guild")?
+            .user_permissions_in(&guild_channel, member.as_ref());
+
+        // Moderators bypass
+        if perms.manage_messages() {
+            return Ok(true);
+        }
+
         let Some(call_channel) = self.active_channel else {
             ctx.send(
                 CreateReply::default().embed(
@@ -206,22 +222,6 @@ impl TtsState {
                 .await?;
 
             return Ok(false);
-        }
-
-        let member = ctx.author_member().await.ok_or("Failed to get member")?;
-        let guild_channel = ctx
-            .guild_channel()
-            .await
-            .ok_or("Failed to get guild channel")?;
-
-        let perms = ctx
-            .guild()
-            .ok_or("Not in a guild")?
-            .user_permissions_in(&guild_channel, member.as_ref());
-
-        // Moderators bypass
-        if perms.manage_messages() {
-            return Ok(true);
         }
 
         let is_on_same_vc = ctx
