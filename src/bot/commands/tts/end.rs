@@ -6,7 +6,7 @@ use crate::bot::commands::TtsStateExt;
 
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn end(ctx: bot::Context<'_>, user: Option<UserId>) -> Result<(), bot::Error> {
-    if ctx.data().tts.check_same_channel(&ctx).await? {
+    if !ctx.data().tts.check_same_channel(&ctx).await? {
         return Ok(());
     };
 

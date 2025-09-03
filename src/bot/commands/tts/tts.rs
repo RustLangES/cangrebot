@@ -15,7 +15,7 @@ async fn tts_play(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error>
         ctx.data().tts.join(ctx.channel_id()).await;
     }
 
-    if ctx.data().tts.check_same_channel(&ctx).await? {
+    if !ctx.data().tts.check_same_channel(&ctx).await? {
         return Ok(());
     }
 

@@ -186,7 +186,7 @@ impl TtsState {
         self.active_users.contains(user_id)
     }
 
-    // Returns true if needs to early return
+    // Returns false if needs to early return
     pub async fn check_same_channel(&self, ctx: &bot::Context<'_>) -> Result<bool, bot::Error> {
         let Some(call_channel) = self.active_channel else {
             ctx.send(
@@ -198,14 +198,14 @@ impl TtsState {
             )
             .await?;
 
-            return Ok(true);
+            return Ok(false);
         };
 
         if ctx.channel_id() != call_channel {
             ctx.reply("Permitido solo en el canal de voz donde me encuentro.")
                 .await?;
 
-            return Ok(true);
+            return Ok(false);
         }
 
         let member = ctx.author_member().await.ok_or("Failed to get member")?;
@@ -220,8 +220,8 @@ impl TtsState {
             .user_permissions_in(&guild_channel, member.as_ref());
 
         // Moderators bypass
-        if !perms.manage_messages() {
-            return Ok(false);
+        if perms.manage_messages() {
+            return Ok(true);
         }
 
         let is_on_same_vc = ctx
@@ -236,14 +236,14 @@ impl TtsState {
             ctx.reply("Tienes que estar conectado en vc para utilizar este comando.")
                 .await?;
 
-            return Ok(true);
+            return Ok(false);
         }
 
-        Ok(false)
+        Ok(true)
     }
 
     pub async fn join_vc(
-        ctx: &poise::serenity_prelude::Context,
+        ctx: &serenity::Context,
         guild_id: GuildId,
         channel_id: ChannelId,
     ) -> Result<bool, bot::Error> {
