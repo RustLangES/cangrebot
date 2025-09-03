@@ -17,31 +17,31 @@ use crate::CangrebotSecrets;
 pub async fn handle(
     ctx: &Context,
     event: &FullEvent,
-    _: FrameworkContext<'_, Data, bot::Error>,
+    fm: FrameworkContext<'_, Data, bot::Error>,
     data: &Data,
     secrets: &CangrebotSecrets,
 ) -> Result<(), bot::Error> {
     match event {
         FullEvent::Ready { data_about_bot, .. } => {
             info!("Logged in as {}", data_about_bot.user.name);
+            Ok(())
         }
         FullEvent::Message { new_message } => {
-            if compiler::message(ctx, new_message, &secrets.discord_prefix).await?
+            _ = compiler::message(ctx, new_message, &secrets.discord_prefix).await?
                 || new_members_mention::message(ctx, new_message).await?
                 || read_github_links::message(ctx, new_message).await
                 || temporal_voice::message(ctx, new_message, ChannelId::new(secrets.temporal_logs))
                     .await?
-                || tts::message(ctx, new_message, data).await?
-            {
-                return Ok(());
-            }
+                || tts::message(ctx, new_message, data).await?;
+
+            Ok(())
         }
         FullEvent::MessageUpdate { event, .. } => {
             let msg = ctx.http.get_message(event.channel_id, event.id).await?;
 
-            if temporal_voice::message(ctx, &msg, ChannelId::new(secrets.temporal_logs)).await? {
-                return Ok(());
-            }
+            temporal_voice::message(ctx, &msg, ChannelId::new(secrets.temporal_logs)).await?;
+
+            Ok(())
         }
 
         FullEvent::GuildMemberAddition { new_member } => {
@@ -51,16 +51,17 @@ pub async fn handle(
                 new_member,
             )
             .await;
+
+            Ok(())
         }
         FullEvent::InteractionCreate { interaction } => {
             // for buttons
             if let Some(interaction) = interaction.as_message_component() {
-                if read_github_links::handle_delete_embed(ctx, interaction).await
-                    || read_github_links::handle_save_embed(ctx, interaction).await
-                {
-                    return Ok(());
-                }
+                _ = read_github_links::handle_delete_embed(ctx, interaction).await
+                    || read_github_links::handle_save_embed(ctx, interaction).await;
             }
+
+            Ok(())
         }
         FullEvent::VoiceStateUpdate { old, new } => {
             let Some(guild_id) = &new.guild_id else {
@@ -71,19 +72,34 @@ pub async fn handle(
             };
 
             if let Some(channel_id) = new.channel_id {
+                let has_moved = old
+                    .as_ref()
+                    .and_then(|old| old.channel_id.as_ref())
+                    .is_some_and(|old| old != &channel_id);
+
+                if has_moved && member.user.id == fm.bot_id {
+                    tts::moved(ctx, channel_id, data).await?;
+
+                    return Ok(());
+                }
+
                 if channel_id == ChannelId::new(secrets.temporal_wait) {
                     temporal_voice_join(ctx, member, guild_id, secrets.temporal_category).await?;
                 } else {
                     tts::join(ctx, member, guild_id, channel_id, data).await?;
                 }
+
+                return Ok(());
             }
+
             if let Some(old) = old {
                 temporal_voice_quit(ctx, &old.channel_id.unwrap()).await?;
-                tts::quit(ctx, guild_id, old, data).await?;
+                tts::quit(ctx, fm.bot_id, guild_id, old, data).await?;
+                return Ok(());
             }
-        }
-        _ => {}
-    }
 
-    Ok(())
+            Ok(())
+        }
+        _ => Ok(()),
+    }
 }

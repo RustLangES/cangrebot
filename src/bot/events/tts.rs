@@ -1,5 +1,5 @@
 use poise::serenity_prelude::{
-    ChannelId, Context, CreateEmbed, GuildId, Member, Message, RoleId, VoiceState,
+    ChannelId, Context, CreateEmbed, GuildId, Member, Message, RoleId, UserId, VoiceState,
 };
 use poise::CreateReply;
 
@@ -81,6 +81,40 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
     Ok(false)
 }
 
+pub async fn moved(
+    ctx: &Context,
+    channel_id: ChannelId,
+    data: &bot::Data,
+) -> Result<(), bot::Error> {
+    let mut tts = data.tts.lock().await;
+
+    if tts
+        .active_channel()
+        .is_some_and(|active_channel| active_channel == &channel_id)
+    {
+        return Ok(());
+    }
+
+    tts.reset();
+    tts.join(channel_id);
+
+    let tts_members = channel_id
+        .to_channel(ctx)
+        .await?
+        .guild()
+        .expect("This bot is for guilds")
+        .members(ctx)?
+        .into_iter()
+        .filter(|member| !member.user.bot && member.roles.contains(&DEFAULT_TTS_ROLE))
+        .map(|member| member.user.id);
+
+    for member in tts_members {
+        tts.begin(member);
+    }
+
+    Ok(())
+}
+
 pub async fn join(
     ctx: &Context,
     member: &Member,
@@ -109,19 +143,20 @@ pub async fn join(
                 .filter(|member| !member.user.bot)
                 .map(|member| (member.roles.contains(&DEFAULT_TTS_ROLE), member.user.id))
                 .fold(
-                    (Vec::new(), Vec::new()),
+                    (0, Vec::new()),
                     |(mut non_tts, mut tts), (is_tts, member_id)| {
                         if is_tts {
                             tts.push(member_id);
                         } else {
-                            non_tts.push(member_id);
+                            non_tts += 1;
                         }
 
                         (non_tts, tts)
                     },
                 );
 
-            let should_join = non_tts_members.len() + tts_members.len() > 1;
+            let total_members = non_tts_members + tts_members.len();
+            let should_join = !tts_members.is_empty() && total_members > 1;
 
             if !should_join {
                 return Ok(());
@@ -146,10 +181,17 @@ pub async fn join(
 
 pub async fn quit(
     ctx: &Context,
+    bot_id: UserId,
     guild_id: &GuildId,
     state: &VoiceState,
     data: &bot::Data,
 ) -> Result<(), bot::Error> {
+    if state.user_id == bot_id {
+        data.tts.reset().await;
+
+        return Ok(());
+    }
+
     if state.channel_id != data.tts.active_channel().await {
         return Ok(());
     }
@@ -182,7 +224,7 @@ pub async fn quit(
         .len();
 
     // I'm alone, very alone, just alone, my alone, our alone
-    if channel_members == 1 {
+    if channel_members <= 1 {
         data.tts.leave(ctx, *guild_id).await?;
 
         let channel_id = state.channel_id.unwrap();

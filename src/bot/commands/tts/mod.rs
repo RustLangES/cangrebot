@@ -102,6 +102,7 @@ pub trait TtsStateExt {
     async fn active_users(&self) -> usize;
     async fn begin(&self, user_id: UserId);
     async fn end(&self, user_id: &UserId) -> bool;
+    async fn reset(&self);
     async fn is_active_user(&self, user_id: &UserId) -> bool;
     async fn join(&self, channel: ChannelId);
     async fn leave(&self, ctx: &serenity::Context, guild_id: GuildId) -> Result<(), bot::Error>;
@@ -123,6 +124,10 @@ impl TtsStateExt for Mutex<TtsState> {
 
     async fn end(&self, user_id: &UserId) -> bool {
         self.lock().await.end(user_id)
+    }
+
+    async fn reset(&self) {
+        self.lock().await.reset()
     }
 
     async fn is_active_user(&self, user_id: &UserId) -> bool {
@@ -149,6 +154,10 @@ pub struct TtsState {
 }
 
 impl TtsState {
+    pub fn active_channel(&self) -> Option<&ChannelId> {
+        self.active_channel.as_ref()
+    }
+
     pub fn reset(&mut self) {
         self.active_users.clear();
         _ = self.active_channel.take();
