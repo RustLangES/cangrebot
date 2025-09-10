@@ -135,35 +135,56 @@ pub async fn handle(
                 (None, None) => unreachable!("If old and new state are none, it means that the user has no interaction with vc ")
             };
 
+            // Temporal voice
             match change {
-                VoiceChange::Move {
-                    member,
-                    new_channel_id: channel_id,
-                    ..
-                }
-                | VoiceChange::Join {
+                VoiceChange::Join {
                     member, channel_id, ..
                 } if channel_id == ChannelId::new(secrets.temporal_wait) => {
                     temporal_voice_join(ctx, member, guild_id, secrets.temporal_category).await?;
                 }
 
+                VoiceChange::Quit { channel_id, .. } => {
+                    temporal_voice_quit(ctx, &channel_id).await?;
+                }
+
+                VoiceChange::Move {
+                    member,
+                    old_channel_id,
+                    new_channel_id,
+                    ..
+                } => {
+                    temporal_voice_quit(ctx, &old_channel_id).await?;
+
+                    if new_channel_id == ChannelId::new(secrets.temporal_wait) {
+                        temporal_voice_join(ctx, member, guild_id, secrets.temporal_category)
+                            .await?;
+                    }
+                }
+
+                _ => {}
+            }
+
+            // Text-to-Speech
+            match change {
                 VoiceChange::Move { new_channel_id, .. } if member.user.id == fm.bot_id => {
                     tts::moved(ctx, new_channel_id, data).await?;
                 }
 
-                VoiceChange::Move {
-                    new_channel_id: channel_id,
-                    ..
-                }
-                | VoiceChange::Join { channel_id, .. } => {
+                VoiceChange::Join { channel_id, .. } => {
                     tts::join(ctx, member, guild_id, channel_id, data).await?;
                 }
 
-                VoiceChange::Quit {
-                    state, channel_id, ..
-                } => {
-                    temporal_voice_quit(ctx, &channel_id).await?;
+                VoiceChange::Quit { state, .. } => {
                     tts::quit(ctx, fm.bot_id, guild_id, state, data).await?;
+                }
+
+                VoiceChange::Move {
+                    old,
+                    new_channel_id,
+                    ..
+                } => {
+                    tts::quit(ctx, fm.bot_id, guild_id, old, data).await?;
+                    tts::join(ctx, member, guild_id, new_channel_id, data).await?;
                 }
             }
 
