@@ -100,6 +100,8 @@ fn split_text(s: &str, max_chars: usize) -> Vec<String> {
 pub trait TtsStateExt {
     async fn active_channel(&self) -> Option<ChannelId>;
     async fn active_users(&self) -> usize;
+    async fn is_last_user(&self, user_id: &UserId) -> bool;
+    async fn set_last_user(&self, user_id: UserId);
     async fn begin(&self, user_id: UserId);
     async fn end(&self, user_id: &UserId) -> bool;
     async fn reset(&self);
@@ -116,6 +118,18 @@ impl TtsStateExt for Mutex<TtsState> {
 
     async fn active_users(&self) -> usize {
         self.lock().await.active_users.len()
+    }
+
+    async fn is_last_user(&self, user_id: &UserId) -> bool {
+        self.lock()
+            .await
+            .last_user
+            .as_ref()
+            .is_some_and(|u| u == user_id)
+    }
+
+    async fn set_last_user(&self, user_id: UserId) {
+        _ = self.lock().await.last_user.insert(user_id);
     }
 
     async fn begin(&self, user_id: UserId) {
@@ -151,6 +165,7 @@ impl TtsStateExt for Mutex<TtsState> {
 pub struct TtsState {
     active_channel: Option<ChannelId>,
     active_users: HashSet<UserId>,
+    last_user: Option<UserId>,
 }
 
 impl TtsState {
@@ -161,6 +176,7 @@ impl TtsState {
     pub fn reset(&mut self) {
         self.active_users.clear();
         _ = self.active_channel.take();
+        _ = self.last_user.take();
     }
 
     pub fn join(&mut self, channel: ChannelId) {
