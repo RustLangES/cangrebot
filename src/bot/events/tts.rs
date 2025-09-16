@@ -63,11 +63,16 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
         return Ok(true);
     };
 
-    let raw_text = if data.tts.active_users().await == 1 {
+    let is_unique_speaker = data.tts.active_users().await == 1;
+    let is_consecutive_speaker = data.tts.is_last_user(&msg.author.id).await;
+
+    let raw_text = if is_unique_speaker || is_consecutive_speaker {
         &msg.content
     } else {
         &format!("{} dice: {}", msg.author.display_name(), &msg.content)
     };
+
+    data.tts.set_last_user(msg.author.id).await;
 
     TtsState::send_tts(
         guild_id,
