@@ -34,18 +34,16 @@ pub async fn clear(
         let mut user_messages: Vec<MessageId> = vec![];
 
         while user_messages.len() < quantity as usize {
-            let messages = if user_messages.is_empty() {
-                channel
-                    .messages(&ctx.http(), GetMessages::new().limit(quantity))
-                    .await
-            } else {
+            let messages = if let Some(last_msg) = user_messages.last() {
                 channel
                     .messages(
                         &ctx.http(),
-                        GetMessages::new()
-                            .limit(quantity)
-                            .before(user_messages.last().unwrap()),
+                        GetMessages::new().limit(quantity).before(last_msg),
                     )
+                    .await
+            } else {
+                channel
+                    .messages(&ctx.http(), GetMessages::new().limit(quantity))
                     .await
             };
             let Ok(messages) = messages else {
@@ -62,9 +60,9 @@ pub async fn clear(
                     }
                 })
                 .collect::<Vec<MessageId>>();
-            if messages.len() > (quantity as usize - user_messages.len()) {
-                user_messages
-                    .append(&mut messages[0..(quantity as usize - user_messages.len())].to_vec());
+            let remaining_quantity = quantity as usize - user_messages.len();
+            if messages.len() > remaining_quantity {
+                user_messages.extend_from_slice(&messages[0..remaining_quantity]);
             } else {
                 user_messages.append(&mut messages);
             }
