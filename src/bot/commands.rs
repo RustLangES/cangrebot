@@ -1,4 +1,5 @@
 pub mod ask;
+mod clear;
 mod crate_docs;
 mod explain;
 mod help;
@@ -30,5 +31,6 @@ pub fn commands() -> Vec<poise::Command<Data, Error>> {
         selftimeout::selftimeout(),
         tts::tts::tts(),
         wipe_commands::wipe_commands(),
+        clear::clear(),
     ]
 }
