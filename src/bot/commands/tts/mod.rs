@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 
 use poise::serenity_prelude::futures::future::join_all;
@@ -22,7 +23,7 @@ pub mod skip;
 pub mod tts;
 mod tts_normalizer;
 
-use tts_normalizer::TtsNormalizer; 
+use tts_normalizer::TtsNormalizer;
 
 struct TtsTrackData {
     pub uuid: Uuid,
