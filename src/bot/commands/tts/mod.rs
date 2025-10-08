@@ -11,9 +11,9 @@ use songbird::input::HttpRequest;
 use songbird::tracks::Track;
 use songbird::Call;
 use tokio::sync::Mutex;
+use tts_normalizer::TtsNormalizer;
 use urlencoding::encode;
 use uuid::Uuid;
-use tts_normalizer::TtsNormalizer;
 
 use crate::bot;
 
