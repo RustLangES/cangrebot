@@ -1,17 +1,14 @@
-use std::borrow::Cow;
-use std::collections::HashSet;
-use std::sync::{Arc, LazyLock};
+use std::sync::Arc;
 
 use poise::serenity_prelude::futures::future::join_all;
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateEmbed, GuildId, Http, UserId};
 use poise::CreateReply;
-use regex::{Captures, Regex};
+use regex::Regex;
 use reqwest::Client;
 use songbird::input::HttpRequest;
 use songbird::tracks::Track;
 use songbird::Call;
 use tokio::sync::Mutex;
-use tts_normalizer::TtsNormalizer;
 use urlencoding::encode;
 use uuid::Uuid;
 
@@ -23,6 +20,9 @@ pub mod leave;
 pub mod skip;
 #[allow(clippy::module_inception)]
 pub mod tts;
+mod tts_normalizer;
+
+use tts_normalizer::TtsNormalizer; 
 
 struct TtsTrackData {
     pub uuid: Uuid,
