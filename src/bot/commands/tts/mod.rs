@@ -13,6 +13,7 @@ use songbird::Call;
 use tokio::sync::Mutex;
 use urlencoding::encode;
 use uuid::Uuid;
+use tts_normalizer::TtsNormalizer;
 
 use crate::bot;
 
@@ -293,18 +294,7 @@ impl TtsState {
     ) -> Result<(), bot::Error> {
         let resolved = replace_mentions(guild_id, http.clone(), raw_text).await?;
 
-        let cleaned = replace_patterns!(
-            resolved,
-            [
-                (
-                    r"https?://(?:www\.)?[-a-zA-Z0-9@%._+~#=]{2,256}\.[a-z]{2,6}(?:[-a-zA-Z0-9@:%_+.~#?&/=]*)?",
-                    |_caps| Cow::Borrowed("enlace")
-                ),
-                (r"<a?:([a-zA-Z0-9_]+):\d+>", |caps| Cow::Owned(
-                    caps[1].to_string()
-                )),
-            ]
-        );
+        let cleaned = TtsNormalizer::normalize(&resolved);
 
         let client = Client::new();
         let uuid = Uuid::new_v4();
