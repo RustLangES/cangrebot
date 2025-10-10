@@ -297,7 +297,7 @@ impl TtsState {
             resolved,
             [
                 (
-                    r"<?https?://(?:www\.)?[-a-zA-Z0-9@%._+~#=]{2,256}\.[a-z]{2,6}(?:[-a-zA-Z0-9@:%_+.~#?&/=]*)?>?",
+                    r"<?https?://(?:www\.)?[-a-zA-Z0-9@%._+~#=]{2,256}\.[a-z]{2,6}(?:[-a-zA-Z0-9@:%_+.~#?&/=\p{L}]*)>?",
                     |_caps| Cow::Borrowed("enlace")
                 ),
                 (r"<a?:([a-zA-Z0-9_]+):\d+>", |caps| Cow::Owned(
