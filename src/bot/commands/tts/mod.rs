@@ -306,6 +306,10 @@ impl TtsState {
                 (r"(?i)\b[jsadkf]{4,}\b", |_caps| Cow::Borrowed("* risa *")),
                 
                 (r"(?i)\bq\b",|_caps| Cow::Borrowed("que")),
+
+                (r"(?i)\bxq\b",|_caps| Cow::Borrowed("porque")),
+
+                (r"(?i)\btmb\b",|_caps| Cow::Borrowed("también")),
             ]
         );
 
