@@ -307,6 +307,12 @@ impl TtsState {
                 (r"(?i)\bq\b", |_caps| Cow::Borrowed("que")),
                 (r"(?i)\bxq\b", |_caps| Cow::Borrowed("porque")),
                 (r"(?i)\btmb\b", |_caps| Cow::Borrowed("también")),
+                (r"```[\s\S]*?```", |caps| Cow::Borrowed(
+                    "Mira el bloque de codigo"
+                )),
+                (r"`[^`\n]*`", |caps| Cow::Borrowed(
+                    "Mira el bloque de codigo"
+                )),
             ]
         );
 
