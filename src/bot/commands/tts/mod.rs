@@ -15,6 +15,7 @@ use urlencoding::encode;
 use uuid::Uuid;
 
 use crate::bot;
+use crate::bot::commands::tts::tts_regex::*;
 
 pub mod begin;
 pub mod end;
@@ -22,6 +23,7 @@ pub mod leave;
 pub mod skip;
 #[allow(clippy::module_inception)]
 pub mod tts;
+pub mod tts_regex;
 
 struct TtsTrackData {
     pub uuid: Uuid,
@@ -46,7 +48,7 @@ async fn replace_mentions(
     http: Arc<Http>,
     raw_text: &str,
 ) -> Result<String, serenity::Error> {
-    let mention_re = Regex::new(r"<@(\d+)>").unwrap();
+    let mention_re = Regex::new(MENTION_REGEX).unwrap();
     let mut resolved = String::with_capacity(raw_text.len());
     let mut last_end = 0;
 
@@ -296,23 +298,23 @@ impl TtsState {
         let cleaned = replace_patterns!(
             resolved,
             [
-                (
-                    r"<?https?://(?:www\.)?[-a-zA-Z0-9@%._+~#=]{2,256}\.[a-z]{2,6}(?:[-a-zA-Z0-9@:%_+.~#?&/=\p{L}]*)>?",
-                    |_caps| Cow::Borrowed("enlace")
-                ),
-                (r"<a?:([a-zA-Z0-9_]+):\d+>", |caps| Cow::Owned(
-                    caps[1].to_string()
-                )),
-                (r"(?i)\b[jsadkf]{4,}\b", |_caps| Cow::Borrowed("* risa *")),
-                (r"(?i)\bq\b", |_caps| Cow::Borrowed("que")),
-                (r"(?i)\bxq\b", |_caps| Cow::Borrowed("porque")),
-                (r"(?i)\btmb\b", |_caps| Cow::Borrowed("también")),
-                (r"```[\s\S]*?```", |caps| Cow::Borrowed(
+                (LINK_REGEX, |_caps| Cow::Borrowed("Enlace")),
+                (EMOJI_REGEX, |caps| Cow::Owned(caps[1].to_string())),
+                (LAUGHTER_REGEX, |_caps| Cow::Borrowed("* Risa *")),
+                (WHAT_REGEX, |_caps| Cow::Borrowed("Que")),
+                (WHY_REGEX, |_caps| Cow::Borrowed("Por que")),
+                (ALSO_REGEX, |_caps| Cow::Borrowed("También")),
+                (MULTI_LINE_CODE_BLOCK_REGEX, |caps| Cow::Borrowed(
                     "Mira el bloque de codigo"
                 )),
-                (r"`[^`\n]*`", |caps| Cow::Borrowed(
+                (INLINE_CODE_BLOCK_REGEX, |caps| Cow::Borrowed(
                     "Mira el bloque de codigo"
                 )),
+                (CORRECTION_REGEX, |caps| {
+                    let mut word_correction = caps[0].to_string();
+                    word_correction.pop();
+                    Cow::Owned(format!("Corrijo... {}", word_correction))
+                }),
             ]
         );
 
