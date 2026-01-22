@@ -1,0 +1,10 @@
+pub const MENTION_REGEX: &str = r"<@(\d+)>";
+pub const LINK_REGEX: &str = r"<?https?://(?:www\.)?[-a-zA-Z0-9@%._+~#=]{2,256}\.[a-z]{2,6}(?:[-a-zA-Z0-9@:%_+.~#?&/=\p{L}]*)>?";
+pub const EMOJI_REGEX: &str = r"<a?:([a-zA-Z0-9_]+):\d+>";
+pub const LAUGHTER_REGEX: &str = r"(?i)\b[jsadkf]{4,}\b";
+pub const WHAT_REGEX: &str = r"(?i)\bq\b";
+pub const WHY_REGEX: &str = r"(?i)\bxq\b";
+pub const ALSO_REGEX: &str = r"(?i)\btmb\b";
+pub const INLINE_CODE_BLOCK_REGEX: &str = r"`[^`\n]*`";
+pub const MULTI_LINE_CODE_BLOCK_REGEX: &str = r"```[\s\S]*?```";
+pub const CORRECTION_REGEX: &str = r"^\w+\*$";
