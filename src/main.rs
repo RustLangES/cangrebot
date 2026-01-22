@@ -30,7 +30,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     };
 
     tokio::select! {
-        _ = discord_bot.start_autosharded() => {},
+        Err(e) = discord_bot.start_autosharded() => tracing::error!("Fail to start discord bot: {e}"),
         () = serve_router => {},
     };
     Ok(())
