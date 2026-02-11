@@ -21,6 +21,10 @@ pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<b
         return Ok(false);
     }
 
+    if msg.message_reference.is_some() || msg.referenced_message.is_some() {
+        return Ok(false);
+    }
+
     let guild_id = msg.guild_id.ok_or("No se pudo obtener el guild")?;
 
     let guild_channel = msg
