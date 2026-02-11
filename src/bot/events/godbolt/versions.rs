@@ -1,6 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use std::{cmp::Ordering, fmt::Display};
 
+#[allow(clippy::derive_ord_xor_partial_ord)]
 #[derive(Eq, PartialOrd, Clone, Debug)]
 pub struct OptionalVersion {
     major: Option<i32>,
@@ -56,7 +57,6 @@ impl PartialEq for OptionalVersion {
     }
 }
 
-#[allow(clippy::derive_ord_xor_partial_ord)]
 impl Ord for OptionalVersion {
     fn cmp(&self, other: &Self) -> Ordering {
         let s_is_none = self.is_none();

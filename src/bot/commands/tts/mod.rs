@@ -304,16 +304,16 @@ impl TtsState {
                 (WHAT_REGEX, |_caps| Cow::Borrowed("Que")),
                 (WHY_REGEX, |_caps| Cow::Borrowed("Por que")),
                 (ALSO_REGEX, |_caps| Cow::Borrowed("También")),
-                (MULTI_LINE_CODE_BLOCK_REGEX, |caps| Cow::Borrowed(
+                (MULTI_LINE_CODE_BLOCK_REGEX, |_caps| Cow::Borrowed(
                     "Mira el bloque de codigo"
                 )),
-                (INLINE_CODE_BLOCK_REGEX, |caps| Cow::Borrowed(
+                (INLINE_CODE_BLOCK_REGEX, |_caps| Cow::Borrowed(
                     "Mira el bloque de codigo"
                 )),
                 (CORRECTION_REGEX, |caps| {
                     let mut word_correction = caps[0].to_string();
                     word_correction.pop();
-                    Cow::Owned(format!("Corrijo... {}", word_correction))
+                    Cow::Owned(format!("Corrijo... {word_correction}"))
                 }),
             ]
         );
