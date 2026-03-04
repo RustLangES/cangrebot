@@ -1,13 +1,11 @@
-default: check build clippy test
+default: test
 
-check:
+check-fmt:
     cargo fmt --all --check
+    
+clippy: check-fmt
+    cargo clippy --all-targets --all-features -- -D warnings
 
-build:
-    cargo build
-
-test:
+test: clippy
     cargo test --verbose
 
-clippy:
-    cargo clippy --all-targets --all-features -- -D warnings

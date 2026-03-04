@@ -34,4 +34,11 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - name: Checks
         run: |
-          cargo clippy -- -D warnings
+          cargo clippy --all-targets --all-features -- -D warnings
+  
+  test:
+    needs: [check-clippy]
+    runs-on: ubuntu-22.04
+    steps:
+      - name: Test
+        run: cargo test --verbose
