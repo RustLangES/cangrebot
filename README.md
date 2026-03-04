@@ -8,8 +8,8 @@ Bot de la comunidad de Discord de RustLang en Español.
 
 Las variables de entorno necesarias están documentadas en [`doc/VARIABLES.md`](doc/VARIABLES.md). Asegúrate de configurarlas antes de ejecutar el bot.
 
-[!NOTE]
-Pequeño disclaimer: Para que el cangrebot funcione correctamente, el bot debe tener permisos de administrador en el servidor de Discord.
+> [!WARNING]
+> Pequeño disclaimer: Para que el cangrebot funcione  correctamente, el bot debe tener permisos de administrador en el servidor de Discord.
 
 ### 2. Gestión de Submódulos
 
