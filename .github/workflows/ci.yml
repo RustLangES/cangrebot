@@ -3,6 +3,8 @@ on:
   workflow_dispatch:
   workflow_call:
   pull_request:
+    types:
+      - ready_for_review
   push:
     branches:
       - main
