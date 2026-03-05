@@ -85,3 +85,78 @@ pub async fn tts(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot:
 async fn play(ctx: bot::Context<'_>, #[rest] text: String) -> Result<(), bot::Error> {
     tts_play(ctx, text).await
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn matches_with_limit(regex: &str, input: &str) -> bool {
+        let re = Regex::new(regex).unwrap();
+
+        re.captures(input)
+            .map(|c| c[1].len() <= 16)
+            .unwrap_or(false)
+    }
+
+    #[test]
+    fn inline_code_cases() {
+        let cases = [
+            ("`hola`", true),
+            ("`hola mundo`", true),
+            ("`1234567891234567`", true),
+            ("```1234567891234567```", true),
+            ("```12345678912345678```", false),
+            ("`ho\nla`", false),
+            ("hola", false),
+            ("`hola", false),
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(matches_with_limit(INLINE_CODE_BLOCK_REGEX, input), expected);
+        }
+    }
+
+    #[test]
+    fn double_code_cases() {
+        let cases = [
+            ("``hola``", true),
+            ("``hola mundo``", true),
+            ("``1234567891234567``", true),
+            ("```1234567891234567```", true),
+            ("```12345678912345678```", false),
+            ("``hola\nmundo``", false),
+            ("hola", false),
+            ("``hola`", false),
+            ("`hola`", false),
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(
+                matches_with_limit(MULTI_LINE_DOUBLE_CODE_BLOCK_REGEX, input),
+                expected
+            );
+        }
+    }
+
+    #[test]
+    fn triple_code_cases() {
+        let cases = [
+            ("```hola```", true),
+            ("```hola mundo```", true),
+            ("```fn main() {}```", true),
+            ("```1234567891234567```", true),
+            ("```12345678912345678```", false),
+            ("```\nhola\nmundo\n```", true),
+            ("hola", false),
+            ("```hola``", false),
+            ("``hola``", false),
+        ];
+
+        for (input, expected) in cases {
+            assert_eq!(
+                matches_with_limit(MULTI_LINE_TRIPLE_CODE_BLOCK_REGEX, input),
+                expected
+            );
+        }
+    }
+}

@@ -317,10 +317,14 @@ impl TtsState {
                 (WHAT_REGEX, |_caps| Cow::Borrowed("Qué")),
                 (WHY_REGEX, |_caps| Cow::Borrowed("Por qué")),
                 (ALSO_REGEX, |_caps| Cow::Borrowed("También")),
-                (MULTI_LINE_TRIPLE_CODE_BLOCK_REGEX,
-                    |caps| handle_code_block(caps)),
-                (MULTI_LINE_DOUBLE_CODE_BLOCK_REGEX,
-                    |caps| handle_code_block(caps)),
+                (
+                    MULTI_LINE_TRIPLE_CODE_BLOCK_REGEX,
+                    |caps| handle_code_block(caps)
+                ),
+                (
+                    MULTI_LINE_DOUBLE_CODE_BLOCK_REGEX,
+                    |caps| handle_code_block(caps)
+                ),
                 (INLINE_CODE_BLOCK_REGEX, |caps| handle_code_block(caps)),
                 (CORRECTION_REGEX, |caps| {
                     let mut word_correction = caps[0].to_string();
