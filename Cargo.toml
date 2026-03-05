@@ -39,12 +39,12 @@ urlencoding = "2.1.3"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 
 symphonia = { version = "0.5", features = ["mp3"] }
-songbird = { version = "0.5", default-features = false, features = [
-	"serenity",
-	"gateway",
-	"driver",
-	"tungstenite",
-	"rustls",
-	"builtin-queue",
+songbird = { git = "https://github.com/beerpsi-forks/songbird.git", branch="davey", default-features = false, features = [
+    "serenity",
+    "gateway",
+    "driver",
+    "tungstenite",
+    "rustls",
+    "builtin-queue",
 ] }
 uuid = { version = "1", features = ["v4"] }

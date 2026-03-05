@@ -36,6 +36,8 @@ macro_rules! replace_patterns  {
         $({
             static REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new($re).expect("valid regex"));
             result = REGEX.replace_all(&result, |$caps: &Captures| -> Cow<str> {
+                #[allow(unused_variables)]
+                let $caps = $caps;
                 $body
             }).into_owned();
         })*
@@ -295,21 +297,31 @@ impl TtsState {
     ) -> Result<(), bot::Error> {
         let resolved = replace_mentions(guild_id, http.clone(), raw_text).await?;
 
+        fn handle_code_block(caps: &Captures) -> Cow<'static, str> {
+            let content = caps.get(1).map(|m| m.as_str().trim()).unwrap_or("");
+            let word_count = content.chars().count();
+
+            if !content.is_empty() && word_count <= 16 {
+                Cow::Owned(content.to_string())
+            } else {
+                Cow::Borrowed("Mira el bloque de código")
+            }
+        }
+
         let cleaned = replace_patterns!(
             resolved,
             [
-                (LINK_REGEX, |_caps| Cow::Borrowed("Enlace")),
+                (LINK_REGEX, |caps| Cow::Borrowed("Enlace")),
                 (EMOJI_REGEX, |caps| Cow::Owned(caps[1].to_string())),
                 (LAUGHTER_REGEX, |_caps| Cow::Borrowed("* Risa *")),
-                (WHAT_REGEX, |_caps| Cow::Borrowed("Que")),
-                (WHY_REGEX, |_caps| Cow::Borrowed("Por que")),
+                (WHAT_REGEX, |_caps| Cow::Borrowed("Qué")),
+                (WHY_REGEX, |_caps| Cow::Borrowed("Por qué")),
                 (ALSO_REGEX, |_caps| Cow::Borrowed("También")),
-                (MULTI_LINE_CODE_BLOCK_REGEX, |caps| Cow::Borrowed(
-                    "Mira el bloque de codigo"
-                )),
-                (INLINE_CODE_BLOCK_REGEX, |caps| Cow::Borrowed(
-                    "Mira el bloque de codigo"
-                )),
+                (MULTI_LINE_TRIPLE_CODE_BLOCK_REGEX,
+                    |caps| handle_code_block(caps)),
+                (MULTI_LINE_DOUBLE_CODE_BLOCK_REGEX,
+                    |caps| handle_code_block(caps)),
+                (INLINE_CODE_BLOCK_REGEX, |caps| handle_code_block(caps)),
                 (CORRECTION_REGEX, |caps| {
                     let mut word_correction = caps[0].to_string();
                     word_correction.pop();
