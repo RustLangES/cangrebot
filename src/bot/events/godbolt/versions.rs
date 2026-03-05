@@ -1,7 +1,7 @@
 use serde::{Deserialize, Deserializer};
 use std::{cmp::Ordering, fmt::Display};
 
-#[derive(Eq, PartialOrd, Clone, Debug)]
+#[derive(Eq, Clone, Debug)]
 pub struct OptionalVersion {
     major: Option<i32>,
     minor: Option<i32>,
@@ -11,12 +11,18 @@ pub struct OptionalVersion {
 }
 
 impl OptionalVersion {
+    pub fn normalize_field(field: Option<i32>) -> Option<i32> {
+        field.filter(|v| *v != 0)
+    }
+
     pub fn trim_ver_from_len(&mut self) {
-        self.extra_len -= self.to_string().len();
+        self.extra_len = self.extra_len.saturating_sub(self.to_string().len());
     }
 
     pub fn is_none(&self) -> bool {
-        self.major.is_none() && self.minor.is_none() && self.patch.is_none()
+        Self::normalize_field(self.major).is_none()
+            && Self::normalize_field(self.minor).is_none()
+            && Self::normalize_field(self.patch).is_none()
     }
 }
 
@@ -50,13 +56,18 @@ impl From<&str> for OptionalVersion {
 
 impl PartialEq for OptionalVersion {
     fn eq(&self, other: &Self) -> bool {
-        self.major.filter(|m| m != &0) == other.major.filter(|m| m != &0)
-            && self.minor.filter(|m| m != &0) == other.minor.filter(|m| m != &0)
-            && self.patch.filter(|p| p != &0) == other.patch.filter(|p| p != &0)
+        Self::normalize_field(self.major) == Self::normalize_field(other.major)
+            && Self::normalize_field(self.minor) == Self::normalize_field(other.minor)
+            && Self::normalize_field(self.patch) == Self::normalize_field(other.patch)
     }
 }
 
-#[allow(clippy::derive_ord_xor_partial_ord)]
+impl PartialOrd for OptionalVersion {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
 impl Ord for OptionalVersion {
     fn cmp(&self, other: &Self) -> Ordering {
         let s_is_none = self.is_none();
@@ -71,10 +82,14 @@ impl Ord for OptionalVersion {
         } else if self.extra_len < other.extra_len {
             Ordering::Greater
         } else {
-            self.major
-                .cmp(&other.major)
-                .then_with(|| self.minor.cmp(&other.minor))
-                .then_with(|| self.patch.cmp(&other.patch))
+            Self::normalize_field(self.major)
+                .cmp(&Self::normalize_field(other.major))
+                .then_with(|| {
+                    Self::normalize_field(self.minor).cmp(&Self::normalize_field(other.minor))
+                })
+                .then_with(|| {
+                    Self::normalize_field(self.patch).cmp(&Self::normalize_field(other.patch))
+                })
         }
     }
 }
