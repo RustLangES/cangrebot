@@ -36,8 +36,6 @@ macro_rules! replace_patterns  {
         $({
             static REGEX: LazyLock<Regex> = LazyLock::new(|| Regex::new($re).expect("valid regex"));
             result = REGEX.replace_all(&result, |$caps: &Captures| -> Cow<str> {
-                #[allow(unused_variables)]
-                let $caps = $caps;
                 $body
             }).into_owned();
         })*
@@ -56,9 +54,9 @@ async fn replace_mentions(
 
     let matches: Vec<(std::ops::Range<usize>, u64)> = mention_re
         .captures_iter(raw_text)
-        .filter_map(|caps| {
-            let m = caps.get(0)?;
-            let id_str = caps.get(1)?.as_str();
+        .filter_map(|_caps| {
+            let m = _caps.get(0)?;
+            let id_str = _caps.get(1)?.as_str();
             let id = id_str.parse::<u64>().ok()?;
             Some((m.range(), id))
         })
@@ -297,8 +295,8 @@ impl TtsState {
     ) -> Result<(), bot::Error> {
         let resolved = replace_mentions(guild_id, http.clone(), raw_text).await?;
 
-        fn handle_code_block(caps: &Captures) -> Cow<'static, str> {
-            let content = caps.get(1).map(|m| m.as_str().trim()).unwrap_or("");
+        fn handle_code_block(_caps: &Captures) -> Cow<'static, str> {
+            let content = _caps.get(1).map(|m| m.as_str().trim()).unwrap_or("");
             let word_count = content.chars().count();
 
             if !content.is_empty() && word_count <= 16 {
@@ -311,23 +309,21 @@ impl TtsState {
         let cleaned = replace_patterns!(
             resolved,
             [
-                (LINK_REGEX, |caps| Cow::Borrowed("Enlace")),
-                (EMOJI_REGEX, |caps| Cow::Owned(caps[1].to_string())),
+                (LINK_REGEX, |_caps| Cow::Borrowed("Enlace")),
+                (EMOJI_REGEX, |_caps| Cow::Owned(_caps[1].to_string())),
                 (LAUGHTER_REGEX, |_caps| Cow::Borrowed("* Risa *")),
                 (WHAT_REGEX, |_caps| Cow::Borrowed("Qué")),
                 (WHY_REGEX, |_caps| Cow::Borrowed("Por qué")),
                 (ALSO_REGEX, |_caps| Cow::Borrowed("También")),
-                (
-                    MULTI_LINE_TRIPLE_CODE_BLOCK_REGEX,
-                    |caps| handle_code_block(caps)
-                ),
-                (
-                    MULTI_LINE_DOUBLE_CODE_BLOCK_REGEX,
-                    |caps| handle_code_block(caps)
-                ),
-                (INLINE_CODE_BLOCK_REGEX, |caps| handle_code_block(caps)),
-                (CORRECTION_REGEX, |caps| {
-                    let mut word_correction = caps[0].to_string();
+                (MULTI_LINE_TRIPLE_CODE_BLOCK_REGEX, |_caps| {
+                    handle_code_block(_caps)
+                }),
+                (MULTI_LINE_DOUBLE_CODE_BLOCK_REGEX, |_caps| {
+                    handle_code_block(_caps)
+                }),
+                (INLINE_CODE_BLOCK_REGEX, |_caps| handle_code_block(_caps)),
+                (CORRECTION_REGEX, |_caps| {
+                    let mut word_correction = _caps[0].to_string();
                     word_correction.pop();
                     Cow::Owned(format!("Corrijo... {}", word_correction))
                 }),
