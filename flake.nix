@@ -1,4 +1,13 @@
 {
+  nixConfig = {
+    extra-substituters = [
+      "https://cache.rustlang-es.org/main"
+    ];
+    extra-trusted-public-keys = [
+      "main:NnVmqBjdfyyL4tGgoTw17lUMDgulJ75+67pOsJupnS4="
+    ];
+  };
+
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     crane.url = "github:ipetkov/crane";
