@@ -11,19 +11,17 @@ pub const MULTI_LINE_DOUBLE_CODE_BLOCK_REGEX: &str = r"``([^`\n]+)``";
 pub const MULTI_LINE_TRIPLE_CODE_BLOCK_REGEX: &str = r"```([\s\S]*?)```";
 pub const CORRECTION_REGEX: &str = r"^\w+\*$";
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use regex::Regex;
 
-    fn aux_match(regex: &str,haystack: &str) -> bool {
+    fn aux_match(regex: &str, haystack: &str) -> bool {
         match Regex::new(regex) {
             Ok(re) => re.is_match(haystack),
             Err(_) => false,
         }
     }
-
 
     #[test]
     fn regex_definition() {
@@ -52,13 +50,13 @@ mod tests {
 
     #[test]
     fn links_not_matchs() {
-        let cases  = [
+        let cases = [
             "ftp://b32.i2p/",
             "https://grüße.tld",
-            "https://example.موقع"
+            "https://example.موقع",
         ];
         for case in cases {
-            assert!(! aux_match(LINK_REGEX, case));
+            assert!(!aux_match(LINK_REGEX, case));
         }
     }
 }
