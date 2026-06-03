@@ -39,7 +39,7 @@ pub async fn send_stats(ctx: Context<'_>) -> Result<(), Error> {
         }
     }
     // Ordenar de más nuevo a más viejo y quedarnos con los 100 primeros
-    all_messages.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    all_messages.sort_by_key(|b| std::cmp::Reverse(b.timestamp));
     let latest_100 = all_messages.into_iter().take(100).collect::<Vec<_>>();
 
     let serialized_msgs: Vec<Value> = latest_100
