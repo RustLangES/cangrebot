@@ -9,6 +9,8 @@ pub struct CangrebotSecrets {
     pub channel_daily: u64,
     /// Channel id for Suggest
     pub channel_suggest: u64,
+    /// Channel id for Showcase
+    pub channel_showcase: u64,
     /// Waiting channel id for temporal voice chats
     pub temporal_wait: u64,
     /// Category id for temporal voice chats
@@ -41,6 +43,10 @@ impl CangrebotSecrets {
                 .expect("'CHANNEL_SUGGEST' was not found")
                 .parse()
                 .expect("Cannot parse 'CHANNEL_SUGGEST'"),
+            channel_showcase: secrets("CHANNEL_SHOWCASE")
+                .expect("'CHANNEL_SHOWCASE' was not found")
+                .parse()
+                .expect("Cannot parse 'CHANNEL_SHOWCASE'"),
             temporal_wait: secrets("TEMPORAL_WAIT")
                 .expect("'TEMPORAL_WAIT' was not found")
                 .parse()

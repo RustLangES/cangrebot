@@ -21,6 +21,7 @@ pub fn build_router(secrets: &CangrebotSecrets, ctx: Arc<Http>) -> Router {
                     axum::routing::post(routes::daily_challenge),
                 )
                 .route("/send_message", axum::routing::post(routes::send_message))
+                .route("/showcase", axum::routing::post(routes::showcase))
                 .layer(axum::middleware::from_fn_with_state(
                     secrets.clone(),
                     auth::middleware,
