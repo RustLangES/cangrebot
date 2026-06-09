@@ -22,6 +22,7 @@ pub fn build_router(secrets: &CangrebotSecrets, ctx: Arc<Http>) -> Router {
                 )
                 .route("/send_message", axum::routing::post(routes::send_message))
                 .route("/showcase", axum::routing::post(routes::showcase))
+                .route("/showcase/sync", axum::routing::post(routes::showcase_sync))
                 .layer(axum::middleware::from_fn_with_state(
                     secrets.clone(),
                     auth::middleware,
