@@ -13,8 +13,6 @@ use crate::api::RouteState;
 use crate::serenity::builder::{CreateForumPost, CreateMessage};
 use crate::serenity::model::prelude::ChannelId;
 
-const SHOWCASE_CACHE_PATH: &str = "showcase_cache.json";
-
 #[derive(Deserialize, Serialize)]
 pub struct ShowcaseSyncRequest {
     projects: Vec<ShowcaseSyncProject>,
@@ -49,7 +47,7 @@ pub async fn showcase_sync(
 ) -> impl IntoResponse {
     info!("Running showcase sync from API");
 
-    let mut cache = match load_showcase_cache() {
+    let mut cache = match load_showcase_cache(&secrets.showcase_cache_path) {
         Ok(cache) => cache,
         Err(reason) => {
             return (
@@ -145,7 +143,7 @@ pub async fn showcase_sync(
         }
     }
 
-    if let Err(reason) = save_showcase_cache(&cache) {
+    if let Err(reason) = save_showcase_cache(&secrets.showcase_cache_path, &cache) {
         failed.push(ShowcaseSyncFailure {
             key: "showcase_cache".to_string(),
             reason,
@@ -168,8 +166,8 @@ pub async fn showcase_sync(
     )
 }
 
-fn load_showcase_cache() -> Result<HashMap<String, String>, String> {
-    match fs::read_to_string(SHOWCASE_CACHE_PATH) {
+fn load_showcase_cache(path: &str) -> Result<HashMap<String, String>, String> {
+    match fs::read_to_string(path) {
         Ok(content) => serde_json::from_str(&content)
             .map_err(|err| format!("Cannot parse showcase cache: {err}")),
         Err(err) if err.kind() == ErrorKind::NotFound => Ok(HashMap::new()),
@@ -177,10 +175,9 @@ fn load_showcase_cache() -> Result<HashMap<String, String>, String> {
     }
 }
 
-fn save_showcase_cache(cache: &HashMap<String, String>) -> Result<(), String> {
+fn save_showcase_cache(path: &str, cache: &HashMap<String, String>) -> Result<(), String> {
     let content = serde_json::to_string_pretty(cache)
         .map_err(|err| format!("Cannot serialize showcase cache: {err}"))?;
 
-    fs::write(SHOWCASE_CACHE_PATH, content)
-        .map_err(|err| format!("Cannot write showcase cache: {err}"))
+    fs::write(path, content).map_err(|err| format!("Cannot write showcase cache: {err}"))
 }

@@ -16,6 +16,8 @@ Para ejecutar el bot, crea un archivo `.env` con las siguientes variables:
 
 - `STATIC_ROOT`: corresponde a la ubicacion del contenido `static`, por defecto es `./static`
 
+- `SHOWCASE_CACHE_PATH`: ruta del archivo usado para guardar el cache de sincronización de showcases. Por defecto es `showcase_cache.json`.
+
 #### Formato para `.env`
 
 ```toml
@@ -25,4 +27,5 @@ BOT_APIKEY = "API key for secure communication"
 CHANNEL_DAILY = "Channel ID for daily challenges"
 CHANNEL_SUGGEST = "Channel ID for suggestions"
 CHANNEL_SHOWCASE = "Channel ID for showcase forum"
+SHOWCASE_CACHE_PATH = "showcase_cache.json"
 ```
