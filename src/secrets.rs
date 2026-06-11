@@ -11,6 +11,8 @@ pub struct CangrebotSecrets {
     pub channel_suggest: u64,
     /// Channel id for Showcase
     pub channel_showcase: u64,
+    /// Path for showcase sync cache file
+    pub showcase_cache_path: String,
     /// Waiting channel id for temporal voice chats
     pub temporal_wait: u64,
     /// Category id for temporal voice chats
@@ -47,6 +49,10 @@ impl CangrebotSecrets {
                 .expect("'CHANNEL_SHOWCASE' was not found")
                 .parse()
                 .expect("Cannot parse 'CHANNEL_SHOWCASE'"),
+            showcase_cache_path: secrets("SHOWCASE_CACHE_PATH").unwrap_or_else(|_| {
+                warn!("'SHOWCASE_CACHE_PATH' was not found. Defaults to \"showcase_cache.json\"");
+                "showcase_cache.json".to_owned()
+            }),
             temporal_wait: secrets("TEMPORAL_WAIT")
                 .expect("'TEMPORAL_WAIT' was not found")
                 .parse()
