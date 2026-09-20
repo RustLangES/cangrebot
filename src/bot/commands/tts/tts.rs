@@ -1,9 +1,9 @@
-use poise::serenity_prelude::CreateEmbed;
 use poise::CreateReply;
+use poise::serenity_prelude::CreateEmbed;
 
 use crate::bot;
-use crate::bot::commands::tts::TtsStateExt;
 use crate::bot::commands::TtsState;
+use crate::bot::commands::tts::TtsStateExt;
 
 async fn tts_play(ctx: bot::Context<'_>, text: String) -> Result<(), bot::Error> {
     let guild_id = ctx.guild_id().ok_or(".")?;

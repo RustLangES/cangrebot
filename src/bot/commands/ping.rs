@@ -1,5 +1,5 @@
 use crate::bot::{Context, Error};
-use poise::{serenity_prelude::CreateEmbed, CreateReply};
+use poise::{CreateReply, serenity_prelude::CreateEmbed};
 use std::time::Instant;
 
 /// Estoy vivo? Recuerdo el sonido... Ping!... Pong!

@@ -1,7 +1,7 @@
 use crate::bot::{Context, Error};
 use poise::{
-    serenity_prelude::{CreateEmbed, Member, Mentionable, Timestamp},
     CreateReply,
+    serenity_prelude::{CreateEmbed, Member, Mentionable, Timestamp},
 };
 
 /// Te aplica un timeout a ti mismo [USAR CON PRECAUCION]

@@ -6,14 +6,17 @@ mod read_github_links;
 pub mod temporal_voice;
 mod tts;
 
-use poise::serenity_prelude::{ChannelId, Context, FullEvent, GuildId, Member, VoiceState};
 use poise::FrameworkContext;
+use poise::serenity_prelude::{
+    ChannelId, Context, FullEvent, GuildId, Member, Message, VoiceState,
+};
 use temporal_voice::{temporal_voice_join, temporal_voice_quit};
 use tracing::info;
 
-use crate::bot::{self, Data};
 use crate::CangrebotSecrets;
+use crate::bot::{self, Data};
 
+#[derive(Clone)]
 #[expect(dead_code, reason = "Maybe it is useful in the future")]
 enum VoiceChange<'a> {
     Join {
@@ -55,8 +58,7 @@ pub async fn handle(
             _ = compiler::message(ctx, new_message, &secrets.discord_prefix).await?
                 || new_members_mention::message(ctx, new_message).await?
                 || read_github_links::message(ctx, new_message).await
-                || temporal_voice::message(ctx, new_message, ChannelId::new(secrets.temporal_logs))
-                    .await?
+                || send_temporal_log(secrets, ctx, new_message).await?
                 || tts::message(ctx, new_message, data).await?;
 
             Ok(())
@@ -64,7 +66,7 @@ pub async fn handle(
         FullEvent::MessageUpdate { event, .. } => {
             let msg = ctx.http.get_message(event.channel_id, event.id).await?;
 
-            temporal_voice::message(ctx, &msg, ChannelId::new(secrets.temporal_logs)).await?;
+            send_temporal_log(secrets, ctx, &msg).await?;
 
             Ok(())
         }
@@ -100,69 +102,43 @@ pub async fn handle(
 
             let change = match (old, new.channel_id) {
                 // Join
-                (None, Some(channel_id)) => {
-                    VoiceChange::Join {
-                        member,
-                        state: new,
-                        channel_id
-                    }
-                }
+                (None, Some(channel_id)) => VoiceChange::Join {
+                    member,
+                    state: new,
+                    channel_id,
+                },
 
                 // Move
-                (Some((old, old_channel_id)), Some(new_channel_id)) if old_channel_id != new_channel_id => {
+                (Some((old, old_channel_id)), Some(new_channel_id))
+                    if old_channel_id != new_channel_id =>
+                {
                     VoiceChange::Move {
                         member,
                         old,
                         old_channel_id,
                         new,
-                        new_channel_id
+                        new_channel_id,
                     }
                 }
 
                 // Quit
-                (Some((old, old_channel)), None) => {
-                    VoiceChange::Quit {
-                        member,
-                        state: old,
-                        channel_id: old_channel
-                    }
-                }
+                (Some((old, old_channel)), None) => VoiceChange::Quit {
+                    member,
+                    state: old,
+                    channel_id: old_channel,
+                },
 
                 // Any other voice state update
                 (Some(_), Some(_)) => return Ok(()),
 
                 // Impossible
-                (None, None) => unreachable!("If old and new state are none, it means that the user has no interaction with vc ")
+                (None, None) => unreachable!(
+                    "If old and new state are none, it means that the user has no interaction with vc "
+                ),
             };
 
             // Temporal voice
-            match change {
-                VoiceChange::Join {
-                    member, channel_id, ..
-                } if channel_id == ChannelId::new(secrets.temporal_wait) => {
-                    temporal_voice_join(ctx, member, guild_id, secrets.temporal_category).await?;
-                }
-
-                VoiceChange::Quit { channel_id, .. } => {
-                    temporal_voice_quit(ctx, &channel_id).await?;
-                }
-
-                VoiceChange::Move {
-                    member,
-                    old_channel_id,
-                    new_channel_id,
-                    ..
-                } => {
-                    temporal_voice_quit(ctx, &old_channel_id).await?;
-
-                    if new_channel_id == ChannelId::new(secrets.temporal_wait) {
-                        temporal_voice_join(ctx, member, guild_id, secrets.temporal_category)
-                            .await?;
-                    }
-                }
-
-                _ => {}
-            }
+            temporal_voice_update(secrets, ctx, change.clone(), guild_id).await?;
 
             // Text-to-Speech
             match change {
@@ -192,4 +168,64 @@ pub async fn handle(
         }
         _ => Ok(()),
     }
+}
+
+async fn send_temporal_log(
+    secrets: &CangrebotSecrets,
+    ctx: &Context,
+    new_message: &Message,
+) -> Result<bool, bot::Error> {
+    if let Some(temporal_logs) = secrets.temporal_logs
+        && secrets.features.temporal_channels
+    {
+        return temporal_voice::message(ctx, new_message, ChannelId::new(temporal_logs)).await;
+    }
+
+    Ok(false)
+}
+
+async fn temporal_voice_update(
+    secrets: &CangrebotSecrets,
+    ctx: &Context,
+    change: VoiceChange<'_>,
+    guild_id: &GuildId,
+) -> Result<(), bot::Error> {
+    if !secrets.features.temporal_channels {
+        return Ok(());
+    }
+    let Some(temporal_category) = secrets.temporal_category else {
+        return Ok(());
+    };
+    let Some(temporal_wait) = secrets.temporal_wait else {
+        return Ok(());
+    };
+
+    match change {
+        VoiceChange::Join {
+            member, channel_id, ..
+        } if channel_id == ChannelId::new(temporal_wait) => {
+            temporal_voice_join(ctx, member, guild_id, temporal_category).await?;
+        }
+
+        VoiceChange::Quit { channel_id, .. } => {
+            temporal_voice_quit(ctx, &channel_id).await?;
+        }
+
+        VoiceChange::Move {
+            member,
+            old_channel_id,
+            new_channel_id,
+            ..
+        } => {
+            temporal_voice_quit(ctx, &old_channel_id).await?;
+
+            if new_channel_id == ChannelId::new(temporal_wait) {
+                temporal_voice_join(ctx, member, guild_id, temporal_category).await?;
+            }
+        }
+
+        _ => {}
+    }
+
+    Ok(())
 }

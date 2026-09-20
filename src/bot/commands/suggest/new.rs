@@ -1,11 +1,11 @@
 use poise::{
+    CreateReply,
     serenity_prelude::{
         AutoArchiveDuration, ChannelId, ChannelType, CreateEmbed, CreateMessage, CreateThread,
         Mentionable, ReactionType,
     },
-    CreateReply,
 };
-use tracing::info;
+use tracing::{info, warn};
 
 use crate::bot;
 
@@ -19,7 +19,21 @@ pub async fn sugerencia(
     info!("Running create suggestion");
     let data = ctx.data();
 
-    let msg_channel = ChannelId::new(data.secrets.channel_suggest);
+    if !data.secrets.features.suggestions {
+        ctx.send(
+            CreateReply::default()
+                .ephemeral(true)
+                .content("Suggestions are disabled"),
+        )
+        .await?;
+        return Ok(());
+    }
+
+    let Some(channel_suggest) = data.secrets.channel_suggest else {
+        warn!("Suggestion channel was not found");
+        return Ok(());
+    };
+    let msg_channel = ChannelId::new(channel_suggest);
 
     let msg = msg_channel
         .send_message(

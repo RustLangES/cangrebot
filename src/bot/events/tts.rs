@@ -1,12 +1,12 @@
+use poise::CreateReply;
 use poise::serenity_prelude::{
     ChannelId, Context, CreateEmbed, GuildId, Member, Message, RoleId, UserId, VoiceState,
 };
-use poise::CreateReply;
 
 use crate::bot;
 use crate::bot::commands::{TtsState, TtsStateExt};
 
-const DEFAULT_TTS_ROLE: RoleId = RoleId::new(1410740555385802784);
+const DEFAULT_TTS_ROLE: RoleId = RoleId::new(1_410_740_555_385_802_784);
 
 pub async fn message(ctx: &Context, msg: &Message, data: &bot::Data) -> Result<bool, bot::Error> {
     let Some(call_channel) = data.tts.active_channel().await else {

@@ -3,14 +3,14 @@ mod events;
 mod util;
 
 use anyhow::anyhow;
-use poise::serenity_prelude::{futures::TryFutureExt, GuildId};
+use poise::serenity_prelude::{GuildId, futures::TryFutureExt};
 use songbird::SerenityInit;
 use tokio::sync::Mutex;
 use tracing::info;
 
-use crate::{serenity, CangrebotSecrets};
+use crate::{CangrebotSecrets, serenity};
 
-use commands::{commands, TtsState};
+use commands::{TtsState, commands};
 
 pub(super) struct Data {
     secrets: CangrebotSecrets,
@@ -58,15 +58,15 @@ pub async fn setup(secrets: &CangrebotSecrets) -> Result<serenity::Client, anyho
         })
         .setup(move |ctx, _ready, framework| {
             Box::pin(async move {
-                events::temporal_voice::setup(
-                    ctx,
-                    &guild_id,
-                    data_secrets.temporal_category,
-                    data_secrets.temporal_wait,
-                )
-                .await;
-                commands::ask::setup_gemini(ctx, data_secrets.gemini_key.clone()).await;
+                if let Some(temporal_category) = data_secrets.temporal_category
+                    && let Some(temporal_wait) = data_secrets.temporal_wait
+                    && data_secrets.features.temporal_channels
+                {
+                    events::temporal_voice::setup(ctx, &guild_id, temporal_category, temporal_wait)
+                        .await;
+                };
 
+                commands::ask::setup_gemini(ctx, data_secrets.gemini_key.clone()).await;
                 let commands = &framework.options().commands;
                 poise::builtins::register_in_guild(ctx, commands, guild_id).await?;
 
