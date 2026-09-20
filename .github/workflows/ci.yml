@@ -5,6 +5,8 @@ on:
   pull_request:
     types:
       - ready_for_review
+
+    branches: ["main"]
   push:
     branches:
       - main
@@ -35,7 +37,7 @@ jobs:
       - name: Checks
         run: |
           cargo clippy --all-targets --all-features -- -D warnings
-  
+
   test:
     needs: [check-clippy]
     runs-on: ubuntu-22.04
