@@ -325,7 +325,7 @@ impl TtsState {
                 (CORRECTION_REGEX, |caps| {
                     let mut word_correction = caps[0].to_string();
                     word_correction.pop();
-                    Cow::Owned(format!("Corrijo... {}", word_correction))
+                    Cow::Owned(format!("Corrijo... {word_correction}"))
                 }),
             ]
         );
