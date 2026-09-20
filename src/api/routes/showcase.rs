@@ -1,7 +1,7 @@
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -29,7 +29,20 @@ pub async fn showcase(
 ) -> impl IntoResponse {
     info!("Running showcase creation from API");
 
-    let msg_channel = ChannelId::new(secrets.channel_showcase);
+    if !secrets.features.showcase {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Showcase feature is disabled".to_string(),
+        );
+    }
+
+    let Some(channel_showcase) = secrets.channel_showcase else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Cannot obtain showcase channel".to_string(),
+        );
+    };
+    let msg_channel = ChannelId::new(channel_showcase);
 
     let Ok(channel) = msg_channel.to_channel(&ctx).await else {
         return (

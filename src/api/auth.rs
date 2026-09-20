@@ -1,7 +1,7 @@
 use axum::extract::{Request, State};
 use axum::http::{HeaderMap, StatusCode};
 use axum::middleware::Next;
-use axum::response::Response;
+use axum::response::{IntoResponse, Response};
 
 use crate::CangrebotSecrets;
 
@@ -13,9 +13,21 @@ pub async fn middleware(
 ) -> Result<Response, StatusCode> {
     let header_key = headers.get("Authorization");
 
+    if !secrets.features.api {
+        return Ok((
+            axum::http::StatusCode::INTERNAL_SERVER_ERROR,
+            "API feature is disabled",
+        )
+            .into_response());
+    }
+
+    let Some(api_key) = secrets.api_key else {
+        return Err(axum::http::StatusCode::UNAUTHORIZED);
+    };
+
     if header_key
         .as_ref()
-        .is_some_and(|k| k.to_str().unwrap() == secrets.api_key)
+        .is_some_and(|k| k.to_str().unwrap() == api_key)
     {
         return Ok(next.run(req).await);
     }

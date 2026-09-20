@@ -1,7 +1,7 @@
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -27,7 +27,21 @@ pub async fn daily_challenge(
     }): Json<DailyChallengeRequest>,
 ) -> impl IntoResponse {
     info!("Running daily challenge events");
-    let msg_channel = ChannelId::new(secrets.channel_daily);
+
+    if !secrets.features.daily_challenges {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Daily challenges feature is disabled",
+        );
+    }
+
+    let Some(channel_daily) = secrets.channel_daily else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            "Cannot obtain daily channel",
+        );
+    };
+    let msg_channel = ChannelId::new(channel_daily);
 
     let Ok(forum) = msg_channel.to_channel(&ctx).await else {
         return (

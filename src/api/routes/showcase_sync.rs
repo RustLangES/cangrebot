@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::fs;
 use std::io::ErrorKind;
 
+use axum::Json;
 use axum::extract::State;
 use axum::http::StatusCode;
 use axum::response::IntoResponse;
-use axum::Json;
 use serde::{Deserialize, Serialize};
 use tracing::info;
 
@@ -47,6 +47,35 @@ pub async fn showcase_sync(
 ) -> impl IntoResponse {
     info!("Running showcase sync from API");
 
+    if !secrets.features.showcase {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ShowcaseSyncResponse {
+                created: Vec::new(),
+                skipped: Vec::new(),
+                failed: vec![ShowcaseSyncFailure {
+                    key: "showcase_channel".to_string(),
+                    reason: "Showcase feature is disabled".to_string(),
+                }],
+            }),
+        );
+    }
+
+    let Some(channel_showcase) = secrets.channel_showcase else {
+        return (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ShowcaseSyncResponse {
+                created: Vec::new(),
+                skipped: Vec::new(),
+                failed: vec![ShowcaseSyncFailure {
+                    key: "showcase_channel".to_string(),
+                    reason: "Cannot obtain showcase channel".to_string(),
+                }],
+            }),
+        );
+    };
+    let msg_channel = ChannelId::new(channel_showcase);
+
     let mut cache = match load_showcase_cache(&secrets.showcase_cache_path) {
         Ok(cache) => cache,
         Err(reason) => {
@@ -63,8 +92,6 @@ pub async fn showcase_sync(
             );
         }
     };
-
-    let msg_channel = ChannelId::new(secrets.channel_showcase);
 
     let Ok(channel) = msg_channel.to_channel(&ctx).await else {
         return (
