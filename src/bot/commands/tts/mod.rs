@@ -2,14 +2,14 @@ use std::borrow::Cow;
 use std::collections::HashSet;
 use std::sync::{Arc, LazyLock};
 
+use poise::CreateReply;
 use poise::serenity_prelude::futures::future::join_all;
 use poise::serenity_prelude::{self as serenity, ChannelId, CreateEmbed, GuildId, Http, UserId};
-use poise::CreateReply;
 use regex::{Captures, Regex};
 use reqwest::Client;
+use songbird::Call;
 use songbird::input::HttpRequest;
 use songbird::tracks::Track;
-use songbird::Call;
 use tokio::sync::Mutex;
 use urlencoding::encode;
 use uuid::Uuid;

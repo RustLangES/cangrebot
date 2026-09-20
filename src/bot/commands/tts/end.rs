@@ -1,5 +1,5 @@
-use poise::serenity_prelude::{Color, CreateEmbed, UserId};
 use poise::CreateReply;
+use poise::serenity_prelude::{Color, CreateEmbed, UserId};
 
 use crate::bot;
 use crate::bot::commands::TtsStateExt;

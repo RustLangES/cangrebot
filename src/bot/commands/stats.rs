@@ -1,9 +1,9 @@
-use crate::api::routes::send_stats::{send_stats_to_api, ServerStats};
+use crate::api::routes::send_stats::{ServerStats, send_stats_to_api};
 use crate::bot::{Context, Error};
 use anyhow::anyhow;
 use chrono::Utc;
 use poise::serenity_prelude::{ChannelType, GetMessages, GuildId, Message, Timestamp};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 #[poise::command(slash_command, prefix_command)]
 #[allow(clippy::too_many_lines)] // TODO: too many lines allowed until someone works reworks this function

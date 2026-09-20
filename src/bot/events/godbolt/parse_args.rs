@@ -1,4 +1,4 @@
-use super::compiler::{fetch_compiler, CompilationType, GodBoltCompilerOutput, GodBoltError};
+use super::compiler::{CompilationType, GodBoltCompilerOutput, GodBoltError, fetch_compiler};
 use semver::Error as VersionError;
 use std::{collections::HashMap, vec};
 use thiserror::Error;

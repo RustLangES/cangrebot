@@ -1,7 +1,7 @@
 use std::fmt::Write;
 
-use poise::serenity_prelude::{Color, Command, CreateEmbed};
 use poise::CreateReply;
+use poise::serenity_prelude::{Color, Command, CreateEmbed};
 
 use crate::bot;
 

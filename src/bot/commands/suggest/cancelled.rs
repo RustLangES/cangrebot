@@ -1,8 +1,8 @@
+use poise::CreateReply;
 use poise::serenity_prelude::ChannelType;
 use poise::serenity_prelude::CreateEmbed;
 use poise::serenity_prelude::CreateMessage;
 use poise::serenity_prelude::EditThread;
-use poise::CreateReply;
 
 use crate::bot;
 

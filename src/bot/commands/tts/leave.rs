@@ -1,7 +1,7 @@
 use crate::bot;
 use crate::bot::commands::tts::TtsStateExt;
-use poise::serenity_prelude::CreateEmbed;
 use poise::CreateReply;
+use poise::serenity_prelude::CreateEmbed;
 
 #[poise::command(slash_command, prefix_command, guild_only)]
 pub async fn leave(ctx: bot::Context<'_>) -> Result<(), bot::Error> {

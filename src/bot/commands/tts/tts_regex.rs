@@ -30,7 +30,7 @@ mod tests {
 
     #[test]
     fn links_matchs() {
-        let cases  = [
+        let cases = [
             "http://b32.i2p/",
             "http://a..xyz",
             "http://a..xyz",
@@ -41,7 +41,7 @@ mod tests {
             "https://book.rustlang-es.org",
             "https://www.rustlang-es.org",
             "http://hi.xn--4gbrim/",
-            "https://stackoverflow.com/questions/9238640/how-long-can-a-tld-possibly-be#:~:text=This%20answer%20is%20useful,to%20count%20the%20longest%20line"
+            "https://stackoverflow.com/questions/9238640/how-long-can-a-tld-possibly-be#:~:text=This%20answer%20is%20useful,to%20count%20the%20longest%20line",
         ];
         for case in cases {
             assert!(aux_match(LINK_REGEX, case));

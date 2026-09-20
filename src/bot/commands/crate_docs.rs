@@ -1,7 +1,7 @@
 use crate::bot;
 use crate::bot::commands::krate::autocomplete;
-use poise::serenity_prelude::CreateEmbed;
 use poise::CreateReply;
+use poise::serenity_prelude::CreateEmbed;
 use reqwest::StatusCode;
 
 static SEARCH: [&str; 7] = [
